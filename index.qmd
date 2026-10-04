@@ -1,0 +1,13 @@
+---
+title: "Gamekit"
+format:
+  html: default
+  typst: default
+  hugo-md: default
+---
+
+Short canvas learning games for Quarto lectures. Play the problem by hand,
+press **Optimize**, and HiGHS solves it live in your browser.
+
+::: {.game name="knapsack"}
+:::

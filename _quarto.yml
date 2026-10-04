@@ -1,0 +1,18 @@
+project:
+  type: website
+  render:
+    - index.qmd
+    - slides.qmd
+    - games/*.qmd
+
+website:
+  title: "Gamekit"
+
+gamekit:
+  url: https://beyondsimulations.github.io/Quarto-Gamekit
+
+filters:
+  - gamekit
+
+format:
+  html: default

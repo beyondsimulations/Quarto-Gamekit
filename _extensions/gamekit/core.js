@@ -46,12 +46,17 @@
   const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
   const isNumArray = (v) => Array.isArray(v) && v.every((x) => typeof x === "number");
 
-  // A piece's color is a token name ("plan", "accent", "bad", ...) or an RGB array.
+  // A piece's color is a token name ("plan", "accent", "bad", ...) or an
+  // [r, g, b] / [r, g, b, a] array. Always returns [r, g, b, a].
   function rgbOf(color, colors) {
-    if (isNumArray(color)) return color;
-    return colors[color] || colors.text || [0, 0, 0];
+    const c = isNumArray(color) ? color : colors[color] || colors.text || [0, 0, 0];
+    return [c[0], c[1], c[2], c[3] == null ? 1 : c[3]];
   }
-  const css = (rgb) => `rgb(${Math.round(rgb[0])} ${Math.round(rgb[1])} ${Math.round(rgb[2])})`;
+  function css(rgba) {
+    const [r, g, b] = rgba.slice(0, 3).map(Math.round);
+    const a = rgba[3] == null ? 1 : rgba[3];
+    return a < 1 ? `rgb(${r} ${g} ${b} / ${+a.toFixed(3)})` : `rgb(${r} ${g} ${b})`;
+  }
 
   // Copy of a piece with `paint` (a CSS color string) and a numeric `alpha`.
   function resolve(piece, colors) {
@@ -101,13 +106,13 @@
     return out;
   }
 
-  // Parses the two forms a canvas returns from `ctx.fillStyle`.
+  // Parses the two forms a canvas returns from `ctx.fillStyle` into [r, g, b, a].
   function parseColor(s) {
     const str = String(s).trim();
     let m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(str);
-    if (m) return [parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16)];
-    m = /^rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)/i.exec(str);
-    if (m) return [Number(m[1]), Number(m[2]), Number(m[3])];
+    if (m) return [parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16), 1];
+    m = /^rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)(?:[,\s/]+([\d.]+))?/i.exec(str);
+    if (m) return [Number(m[1]), Number(m[2]), Number(m[3]), m[4] == null ? 1 : Number(m[4])];
     return null;
   }
 
@@ -161,7 +166,7 @@
   }
 
   globalThis.GamekitCore = {
-    rng, pair, frame, resolve, assertUniqueKeys, parseColor, gap, thinkLine,
+    rng, pair, frame, resolve, assertUniqueKeys, parseColor, css, gap, thinkLine,
     pixelSize, codeSpans, formatScore, ease,
   };
 })();

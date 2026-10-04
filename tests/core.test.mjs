@@ -54,8 +54,14 @@ const toColors = { plan: [100, 0, 0], text: [10, 10, 10], bad: [200, 0, 0] };
 }
 
 // parseColor: the two forms canvas fillStyle returns
-assert.deepEqual(C.parseColor("#9e2b2b"), [158, 43, 43]);
-assert.deepEqual(C.parseColor("rgba(1, 2, 3, 0.5)"), [1, 2, 3]);
+assert.deepEqual(C.parseColor("#9e2b2b"), [158, 43, 43, 1]);
+assert.deepEqual(C.parseColor("rgba(1, 2, 3, 0.5)"), [1, 2, 3, 0.5]);
+assert.deepEqual(C.parseColor("rgb(1, 2, 3)"), [1, 2, 3, 1]);
+
+// css: opaque and translucent colors; translucent tokens survive resolve()
+assert.equal(C.css([1, 2, 3]), "rgb(1 2 3)");
+assert.equal(C.css([1, 2, 3, 0.75]), "rgb(1 2 3 / 0.75)");
+assert.equal(C.resolve({ key: "m", color: "muted" }, { muted: [33, 37, 41, 0.75] }).paint, "rgb(33 37 41 / 0.75)");
 assert.equal(C.parseColor("nonsense"), null);
 
 // gap: percent distance from the optimum, both directions

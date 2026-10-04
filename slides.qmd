@@ -1,0 +1,9 @@
+---
+title: "Gamekit on slides"
+format: revealjs
+---
+
+## Pack the bag
+
+::: {.game name="knapsack"}
+:::

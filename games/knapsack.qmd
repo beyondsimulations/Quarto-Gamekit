@@ -1,0 +1,6 @@
+---
+title: "Pack the Bag"
+---
+
+::: {.game name="knapsack"}
+:::
