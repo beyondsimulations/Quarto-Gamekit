@@ -60,7 +60,7 @@ format-links: false
 ```js
 Gamekit.game("knapsack", {
   title, task, goal: "max" | "min", unit,     // texts; unit is appended to scores
-  board: { w, h },                            // drawing units; Gamekit scales to pixels
+  board: { w, h, stretch },                   // drawing units; Gamekit scales to pixels
   compactBoard: { w, h },                     // optional: board for phones (screens < 600 px), usually taller
   class: { … },                               // the class puzzle (the lecture's own data)
   check: { optimum },                         // class optimum from your JuMP model
@@ -79,6 +79,7 @@ Gamekit.game("knapsack", {
 });
 ```
 
+- `board.stretch: true` lets the board grow wider than `w` on slides to fill the stage, so its edges line up with the task text; lay out with `view.w`.
 - `ui` is a plain object for transient state (e.g. a selection); Gamekit clears it on Optimize, Reset and New puzzle.
 - `model`, `decode` and `optimal` also receive the player's plan at Optimize, for games where the player shapes the problem (e.g. adds items); most games ignore it. `check.js` solves from `start(puzzle)`.
 - `color` is a token: `plan` (neutral while playing, accent for the optimum), `accent`, `neutral`, `text`, `muted`, `bg`, `good`, `bad`.

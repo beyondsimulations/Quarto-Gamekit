@@ -234,6 +234,13 @@
       g.canvas.width = size.w;
       g.canvas.height = size.h;
     }
+    // A stretching board grows wider to fill a wider slide stage, so it lines
+    // up with the task text; the game lays out with view.w.
+    if (g.slide && g.def.board.stretch) {
+      const base = g.def.board;
+      g.board = { w: Math.max(base.w, (base.h * size.w) / size.h), h: base.h };
+      g.canvas.dataset.board = `${+g.board.w.toFixed(2)}x${g.board.h}`; // for tests
+    }
     // Uniform scale, centred: the board never distorts, whatever box CSS gives the canvas.
     g.px = Math.min(size.w / g.board.w, size.h / g.board.h);
     g.ox = (size.w - g.board.w * g.px) / 2;
