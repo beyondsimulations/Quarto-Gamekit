@@ -26,9 +26,23 @@ def board_point(rect, bw, bh, bx, by):
     return {"x": (rect["width"] - bw * s) / 2 + bx * s, "y": (rect["height"] - bh * s) / 2 + by * s}
 
 
-def item_point(k, rect):
-    """Centre of item k (board 100 × 62)."""
+def item_point(k, rect, compact=False):
+    """Centre of item k: three columns on board 100 × 62, two on the phone board 100 × 84."""
+    if compact:
+        return board_point(rect, 100, 84, 4 + (k % 2) * 48 + 22, 4 + (k // 2) * 22 + 9.5)
     return board_point(rect, 100, 62, 10 + (k % 3) * 30 + 13, 6 + (k // 3) * 20 + 8)
+
+
+TEXT_MATCH = """c => { const r = c.getBoundingClientRect(), b = c.dataset.board.split('x').map(Number);
+  const screenPxPerUnit = Math.min(r.width / b[0], r.height / b[1]);
+  const fontScreenPx = parseFloat(getComputedStyle(c.closest('.gamekit')).fontSize) * (r.width / c.offsetWidth);
+  return [Number(c.dataset.em) * screenPxPerUnit, fontScreenPx]; }"""
+
+
+def assert_text_matches(page, sel):
+    """Canvas text (view.em) and the HTML text around it have the same on-screen size."""
+    canvas_px, html_px = page.eval_on_selector(sel, TEXT_MATCH)
+    assert abs(canvas_px - html_px) < 0.5, f"canvas text {canvas_px:.1f}px vs HTML text {html_px:.1f}px"
 
 
 def rect_of(page, sel):
@@ -69,9 +83,22 @@ def main():
                                  reduced_motion="reduce", has_touch=True)
         phone.on("pageerror", lambda e: errors.append(f"phone: {e}"))
         phone.goto(BASE + "/games/knapsack.html")
+        assert phone.query_selector(".gamekit.gamekit-compact.gamekit-solo"), "phone page is not in compact solo mode"
         for k in PACK:
-            phone.tap(CANVAS, position=item_point(k, rect_of(phone, CANVAS)))
+            phone.tap(CANVAS, position=item_point(k, rect_of(phone, CANVAS), compact=True))
         assert phone.inner_text(".gk-you .gk-value") == "125 points"
+        # one text size: task, status, score parts and buttons all match the game's font size
+        sizes = phone.evaluate("""() => { const r = document.querySelector('.gamekit');
+          return [r, ...r.querySelectorAll('.gamekit-task, .gamekit-status, .gk-label, .gk-value, button:not([hidden])')]
+            .map(e => getComputedStyle(e).fontSize); }""")
+        assert len(set(sizes)) == 1, f"text sizes differ: {sizes}"
+        assert_text_matches(phone, CANVAS)
+        # buttons: equal widths across the full width, at the bottom edge of the screen
+        boxes = phone.evaluate("() => [...document.querySelectorAll('.gamekit-buttons button:not([hidden])')].map(b => b.getBoundingClientRect().toJSON())")
+        widths = [round(b["width"]) for b in boxes]
+        assert max(widths) - min(widths) <= 1, f"buttons are not evenly spaced: {widths}"
+        assert boxes[0]["left"] < 30 and boxes[-1]["right"] > 360, f"buttons do not span the width: {boxes[0]['left']}..{boxes[-1]['right']}"
+        assert boxes[0]["bottom"] > 844 - 30, f"buttons are not at the bottom of the screen: {boxes[0]['bottom']}"
         phone.click("button.gk-primary")
         phone.wait_for_selector("text=Show yours", timeout=3000)
         assert phone.inner_text(".gk-opt .gk-value") == "125 points"
@@ -92,6 +119,7 @@ def main():
         slides.click(canvas, position=item_point(1, rect_of(slides, canvas)))
         assert slides.evaluate("Reveal.getIndices().h") == before, "tapping the game changed the slide"
         assert slides.inner_text(".present .gk-you .gk-value") == "40 points"
+        assert_text_matches(slides, canvas)
 
         browser.close()
     assert not errors, errors

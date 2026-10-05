@@ -1,14 +1,12 @@
 // knapsack.js — Gamekit's demo game: pack the most valuable bag.
 (function () {
   const NAMES = ["Tent", "Stove", "Camera", "Book", "Drone", "Guitar"];
-  const COLS = 3, W = 26, H = 16, X0 = 10, Y0 = 6, GAP = 4;
 
-  const itemBox = (k) => ({
-    x: X0 + (k % COLS) * (W + GAP),
-    y: Y0 + Math.floor(k / COLS) * (H + GAP),
-    w: W,
-    h: H,
-  });
+  // Three columns on wide boards, two on phones (compactBoard, taller boxes).
+  const itemBox = (k, compact) => compact
+    ? { x: 4 + (k % 2) * 48, y: 4 + Math.floor(k / 2) * 22, w: 44, h: 19 }
+    : { x: 10 + (k % 3) * 30, y: 6 + Math.floor(k / 3) * 20, w: 26, h: 16 };
+  const barBox = (compact) => compact ? { x: 4, y: 76, w: 92, h: 5 } : { x: 10, y: 53, w: 86, h: 4 };
   const weight = (p, plan) => plan.reduce((s, on, k) => s + (on ? p.items[k].w : 0), 0);
   const value = (p, plan) => plan.reduce((s, on, k) => s + (on ? p.items[k].v : 0), 0);
   const names = (plan) => NAMES.filter((_, k) => plan[k]).join(", ") || "nothing";
@@ -19,6 +17,7 @@
     goal: "max",
     unit: "points",
     board: { w: 100, h: 62 },
+    compactBoard: { w: 100, h: 84 },
     class: {
       cap: 13,
       items: [
@@ -36,10 +35,10 @@
     },
     start(p) { return p.items.map(() => false); },
 
-    pointer(p, plan, ui, e) {
+    pointer(p, plan, ui, e, view) {
       if (e.type !== "down") return undefined;
       for (let k = 0; k < p.items.length; k++) {
-        const b = itemBox(k);
+        const b = itemBox(k, view && view.compact);
         if (e.x >= b.x && e.x <= b.x + b.w && e.y >= b.y && e.y <= b.y + b.h) {
           const next = plan.slice();
           next[k] = !next[k];
@@ -49,21 +48,18 @@
       return undefined;
     },
 
-    pieces(p, plan) {
-      const out = p.items.map((it, k) => Object.assign(itemBox(k), {
+    pieces(p, plan, ui, view) {
+      const compact = !!(view && view.compact);
+      const out = p.items.map((it, k) => Object.assign(itemBox(k, compact), {
         key: `item-${k}`, kind: "item", name: NAMES[k], v: it.v, wt: it.w,
         packed: plan[k] ? 1 : 0, color: plan[k] ? "plan" : "muted",
       }));
       const used = weight(p, plan);
-      out.push({ key: "bar", kind: "bar", used, cap: p.cap, color: used > p.cap ? "bad" : "plan" });
+      out.push(Object.assign(barBox(compact), { key: "bar", kind: "bar", used, cap: p.cap, color: used > p.cap ? "bad" : "plan" }));
       return out;
     },
 
-    drawBoard(ctx, p, view) {
-      ctx.fillStyle = view.css.muted;
-      ctx.font = `2.8px ${view.font}`;
-      ctx.fillText(`Weight limit: ${p.cap} kg`, X0, 50);
-    },
+    drawBoard() {},
 
     drawPiece(ctx, piece, view) {
       if (piece.kind === "item") {
@@ -75,24 +71,27 @@
         ctx.fillStyle = piece.paint;
         ctx.fillRect(piece.x, piece.y, piece.w, piece.h);
         ctx.globalAlpha = alpha;
+        // all canvas text uses view.em, the same size as the HTML text around the board
         ctx.fillStyle = piece.packed > 0.5 ? view.css.bg : view.css.text;
-        ctx.font = `3.2px ${view.font}`;
+        ctx.font = `${view.em}px ${view.font}`;
         ctx.textAlign = "center";
-        ctx.fillText(piece.name, piece.x + piece.w / 2, piece.y + 6.5);
-        ctx.font = `2.6px ${view.font}`;
-        ctx.fillText(`${piece.v} points · ${piece.wt} kg`, piece.x + piece.w / 2, piece.y + 11.5);
+        ctx.textBaseline = "middle";
+        ctx.fillText(piece.name, piece.x + piece.w / 2, piece.y + piece.h * 0.33);
+        ctx.fillText(`${piece.v} points · ${piece.wt} kg`, piece.x + piece.w / 2, piece.y + piece.h * 0.7);
         ctx.textAlign = "start";
+        ctx.textBaseline = "alphabetic";
       } else if (piece.kind === "bar") {
-        const x = X0, y = 53, w = 3 * W + 2 * GAP, h = 4;
         ctx.strokeStyle = view.css.muted;
         ctx.lineWidth = 0.3;
-        ctx.strokeRect(x, y, w, h);
+        ctx.strokeRect(piece.x, piece.y, piece.w, piece.h);
         ctx.fillStyle = piece.paint;
-        ctx.fillRect(x, y, w * Math.min(1, piece.used / piece.cap), h);
+        ctx.fillRect(piece.x, piece.y, piece.w * Math.min(1, piece.used / piece.cap), piece.h);
+        ctx.font = `${view.em}px ${view.font}`;
+        ctx.fillStyle = view.css.muted;
+        ctx.fillText(`Weight limit: ${piece.cap} kg`, piece.x, piece.y - 1.2);
         ctx.fillStyle = view.css.text;
-        ctx.font = `2.8px ${view.font}`;
         ctx.textAlign = "end";
-        ctx.fillText(`${Math.round(piece.used)} / ${piece.cap} kg`, x + w, 50);
+        ctx.fillText(`${Math.round(piece.used)} / ${piece.cap} kg`, piece.x + piece.w, piece.y - 1.2);
         ctx.textAlign = "start";
       }
     },
