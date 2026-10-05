@@ -20,11 +20,15 @@ CANVAS = ".gamekit canvas"
 PACK = (1, 3, 4)  # Stove, Book, Drone: weight 12 of 13, 125 points (the optimum)
 
 
+def board_point(rect, bw, bh, bx, by):
+    """Board units → CSS pixels on the canvas; the board is drawn letterboxed (uniform scale, centred)."""
+    s = min(rect["width"] / bw, rect["height"] / bh)
+    return {"x": (rect["width"] - bw * s) / 2 + bx * s, "y": (rect["height"] - bh * s) / 2 + by * s}
+
+
 def item_point(k, rect):
-    """Centre of item k in CSS pixels relative to the canvas (board 100 × 62)."""
-    bx = 10 + (k % 3) * 30 + 13
-    by = 6 + (k // 3) * 20 + 8
-    return {"x": bx / 100 * rect["width"], "y": by / 62 * rect["height"]}
+    """Centre of item k (board 100 × 62)."""
+    return board_point(rect, 100, 62, 10 + (k % 3) * 30 + 13, 6 + (k // 3) * 20 + 8)
 
 
 def rect_of(page, sel):
@@ -44,21 +48,21 @@ def main():
         page.evaluate("window.__ev = []; for (const n of ['game-start','game-optimize','game-why']) document.addEventListener(n, e => window.__ev.push(n))")
         page.click(CANVAS, position=item_point(0, rect_of(page, CANVAS)))  # Tent: 10 points
         page.click(CANVAS, position=item_point(2, rect_of(page, CANVAS)))  # Camera: 30 points
-        assert page.inner_text(".gk-you") == "You: 40 points", page.inner_text(".gk-you")
+        assert page.inner_text(".gk-you .gk-value") == "40 points", page.inner_text(".gk-you")
         assert not page.is_disabled("button.gk-primary")
         size = page.eval_on_selector(CANVAS, "c => [c.width, Math.round(c.getBoundingClientRect().width * devicePixelRatio)]")
         assert size[0] == size[1], f"canvas buffer {size}"
         page.click("button.gk-primary")
         page.wait_for_selector(".gamekit-card:has-text('yes/no decisions')", timeout=8000)
         page.wait_for_selector("text=Show yours", timeout=8000)
-        assert page.inner_text(".gk-opt") == "Optimal: 125 points", page.inner_text(".gk-opt")
+        assert page.inner_text(".gk-opt .gk-value") == "125 points", page.inner_text(".gk-opt")
         page.click("text=Show yours")
         page.wait_for_selector("text=Show optimal")
         page.click("text=Why?")
         assert "Your bag: Tent, Camera" in page.inner_text(".gamekit-card")
         assert page.evaluate("window.__ev") == ["game-start", "game-optimize", "game-why"], page.evaluate("window.__ev")
         page.click("text=New puzzle")
-        assert page.inner_text(".gk-you") == "You: 0 points"
+        assert page.inner_text(".gk-you .gk-value") == "0 points"
 
         # 2. phone page, touch, reduced motion: reveal is instant
         phone = browser.new_page(viewport={"width": 390, "height": 844}, device_scale_factor=3,
@@ -67,10 +71,10 @@ def main():
         phone.goto(BASE + "/games/knapsack.html")
         for k in PACK:
             phone.tap(CANVAS, position=item_point(k, rect_of(phone, CANVAS)))
-        assert phone.inner_text(".gk-you") == "You: 125 points"
+        assert phone.inner_text(".gk-you .gk-value") == "125 points"
         phone.click("button.gk-primary")
         phone.wait_for_selector("text=Show yours", timeout=3000)
-        assert phone.inner_text(".gk-opt") == "Optimal: 125 points"
+        assert phone.inner_text(".gk-opt .gk-value") == "125 points"
 
         # 3. slides at projector size: crisp canvas, QR code, taps don't change slides
         slides = browser.new_page(viewport={"width": 1920, "height": 1080})
@@ -80,11 +84,14 @@ def main():
         canvas = ".present .gamekit canvas"
         size = slides.eval_on_selector(canvas, "c => [c.width, Math.round(c.getBoundingClientRect().width * devicePixelRatio)]")
         assert size[0] == size[1], f"slide canvas buffer {size}"
-        assert slides.query_selector(".present .gamekit-qr svg"), "QR code missing"
+        assert slides.query_selector(".present .gamekit-side .gamekit-qr svg"), "QR code missing from the side panel"
+        stage = slides.eval_on_selector(".present .gamekit-stage", "e => e.getBoundingClientRect().right")
+        side = slides.eval_on_selector(".present .gamekit-side", "e => e.getBoundingClientRect().left")
+        assert side >= stage, f"side panel ({side}) is not right of the board ({stage})"
         before = slides.evaluate("Reveal.getIndices().h")
         slides.click(canvas, position=item_point(1, rect_of(slides, canvas)))
         assert slides.evaluate("Reveal.getIndices().h") == before, "tapping the game changed the slide"
-        assert slides.inner_text(".present .gk-you") == "You: 40 points"
+        assert slides.inner_text(".present .gk-you .gk-value") == "40 points"
 
         browser.close()
     assert not errors, errors
