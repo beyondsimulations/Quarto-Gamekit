@@ -63,7 +63,8 @@ Gamekit.game("knapsack", {
   board: { w, h, stretch },                   // drawing units; Gamekit scales to pixels
   compactBoard: { w, h },                     // optional: board for phones (screens < 600 px), usually taller
   class: { … },                               // the class puzzle (the lecture's own data)
-  check: { optimum },                         // class optimum from your JuMP model
+  check: { optimum, plans },                  // class optimum from your JuMP model; plans(puzzle): optional
+                                              // extra plans check.js also solves from (e.g. larger sizes)
   puzzle(rng),                                // → random puzzle; rng() returns [0, 1)
   start(puzzle),                              // → empty plan
   pointer(puzzle, plan, ui, e, view),         // e = { type, x, y } in board units → new plan or undefined
@@ -85,6 +86,7 @@ Gamekit.game("knapsack", {
 - `color` is a token: `plan` (neutral while playing, accent for the optimum), `accent`, `neutral`, `text`, `muted`, `bg`, `good`, `bad`.
 - During the reveal, pieces are matched by `key` (unique per plan). Numbers interpolate, colors blend, pieces only in one plan fade. Emit zero-size pieces instead of omitting them when they should grow.
 - `view` = `{ w, h, px, css, font, em, compact, locked }` (`locked`: the board is locked during and after the reveal; hide play-only hints then); `view.css[token]` is a CSS color string for the seven fixed tokens. `plan` has no entry there: a piece gets its resolved color as `piece.paint`.
+- **Text in boxes:** `GamekitCore.fillCentred(ctx, text, x, y, align)` centres digits and capitals exactly on `y` (canvas's `middle` baseline sits a little off).
 - **One text size:** draw all canvas text at `view.em` (the game's HTML text size in board units), so board labels match the task, scores, status and buttons exactly, on slides and phones. Emphasis only through color and weight.
 - **Phones:** on screens narrower than 600 px `view.compact` is true and the board is `compactBoard` if given; lay out finger-sized targets (≥ 44 px) there. Scores, status and buttons then form a panel at the bottom of the screen with the buttons in equal columns; on the game's own page (`games/<name>.html`) it is fixed to the bottom edge and the page title is hidden (the site's top bar shows it).
 - **Slides:** a wide left column with the task above the board, a thin divider, and a narrow right column with the QR code, the game's state and the buttons at the bottom. The QR code links to `<gamekit.url>/games/<name>.html` when `gamekit.url` is set (so exported or locally served slides still work for phones), otherwise to the page's own address.

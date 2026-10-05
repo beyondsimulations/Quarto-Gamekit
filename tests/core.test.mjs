@@ -99,4 +99,16 @@ assert.equal(
   "23 yes/no decisions → 10⁷ combinations · HiGHS: 0.003 s",
 );
 
+// fillCentred: the digit height's middle sits on y
+{
+  const calls = [];
+  const ctx = { measureText: () => ({ actualBoundingBoxAscent: 10 }), fillText: (...a) => calls.push(a) };
+  C.fillCentred(ctx, "+10 sites", 50, 20);
+  assert.deepEqual(calls, [["+10 sites", 50, 25]]);
+  assert.equal(ctx.textAlign, "center");
+  assert.equal(ctx.textBaseline, "alphabetic");
+  C.fillCentred(ctx, "A loop", 0, 20, "start");
+  assert.equal(ctx.textAlign, "start");
+}
+
 console.log("core.test.mjs: all passed");

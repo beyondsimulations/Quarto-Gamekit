@@ -235,8 +235,9 @@
       g.canvas.height = size.h;
     }
     // A stretching board grows wider to fill a wider slide stage, so it lines
-    // up with the task text; the game lays out with view.w.
-    if (g.slide && g.def.board.stretch) {
+    // up with the task text; the game lays out with view.w. Not mid-morph: the
+    // frames were built for the old width (animate repaints at the end).
+    if (g.slide && g.def.board.stretch && g.phase !== "morph") {
       const base = g.def.board;
       g.board = { w: Math.max(base.w, (base.h * size.w) / size.h), h: base.h };
       g.canvas.dataset.board = `${+g.board.w.toFixed(2)}x${g.board.h}`; // for tests
@@ -423,6 +424,7 @@
       } else {
         g.phase = "done";
         done();
+        if (g.def.board.stretch) redraw(g); // picks up a width change during the morph
       }
     };
     g.raf = requestAnimationFrame(step);
