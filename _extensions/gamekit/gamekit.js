@@ -351,12 +351,13 @@
     try {
       if (g.def.optimal) {
         const s0 = performance.now();
-        g.optimal = await g.def.optimal(g.puzzle);
+        g.optimal = await g.def.optimal(g.puzzle, g.yours);
         line = g.def.think ? g.def.think(g.puzzle, { plan: g.optimal, ms: performance.now() - s0 }) : "";
       } else {
-        const r = await solveLP(g.def.model(g.puzzle));
+        // the player's plan is passed on: a game may let the player size the problem
+        const r = await solveLP(g.def.model(g.puzzle, g.yours));
         if (r.status !== "Optimal") throw new Error("Solver: " + r.status);
-        g.optimal = g.def.decode(g.puzzle, r.values);
+        g.optimal = g.def.decode(g.puzzle, r.values, g.yours);
         line = C.thinkLine(r.counts, r.ms);
       }
       optScore = g.def.score(g.puzzle, g.optimal);

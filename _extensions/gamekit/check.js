@@ -1,6 +1,7 @@
 // check.js — verifies a course's games in Node. Run from the project root:
 //   node _extensions/gamekit/check.js games/*.js
-// For each game: the class puzzle and five seeded random puzzles are solved;
+// For each game: the class puzzle and five seeded random puzzles are solved
+// (from the start plan, for games whose problem depends on the player's plan);
 // the class optimum must equal check.optimum, score(decode(solution)) must
 // equal the solver objective, the optimal plan must be feasible, and piece
 // keys must be unique.
@@ -37,14 +38,15 @@ for (const { name, def } of games) {
     const where = `${name} (${label})`;
     try {
       let plan, objective;
+      const start = def.start(puzzle);
       if (def.optimal) {
-        plan = await def.optimal(puzzle);
+        plan = await def.optimal(puzzle, start);
         objective = def.score(puzzle, plan);
       } else {
-        const r = await solve(def.model(puzzle));
+        const r = await solve(def.model(puzzle, start));
         if (r.status !== "Optimal") { fail(`${where}: solver status ${r.status}`); continue; }
         objective = r.objective;
-        plan = def.decode(puzzle, r.values);
+        plan = def.decode(puzzle, r.values, start);
         const s = def.score(puzzle, plan);
         if (!close(s, objective)) fail(`${where}: score(decode(solution)) = ${s}, solver objective = ${objective}`);
       }
@@ -54,7 +56,7 @@ for (const { name, def } of games) {
         fail(`${where}: optimum ${objective}, expected check.optimum ${def.check.optimum}`);
       }
       for (const view of [{ compact: false, em: 3 }, { compact: true, em: 4.5 }]) {
-        C.assertUniqueKeys(def.pieces(puzzle, def.start(puzzle), {}, view));
+        C.assertUniqueKeys(def.pieces(puzzle, start, {}, view));
         C.assertUniqueKeys(def.pieces(puzzle, plan, {}, view));
       }
       const ins = def.insight(puzzle, plan, plan);

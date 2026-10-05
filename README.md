@@ -72,14 +72,15 @@ Gamekit.game("knapsack", {
   drawPiece(ctx, piece, view),                // one piece; use piece.paint, alpha is preset
   feasible(puzzle, plan),                     // → true or a short reason
   score(puzzle, plan),
-  model(puzzle), decode(puzzle, values),      // LP text for HiGHS, and values → plan
-  // or: optimal(puzzle) and think(puzzle, result) for games solved in JS
+  model(puzzle, plan), decode(puzzle, values, plan), // LP text for HiGHS, and values → plan
+  // or: optimal(puzzle, plan) and think(puzzle, result) for games solved in JS
   insight(puzzle, yours, optimal),            // → { diff, mechanism, model }; `code` in backticks
   describe(puzzle, plan),                     // one line for screen readers
 });
 ```
 
 - `ui` is a plain object for transient state (e.g. a selection); Gamekit clears it on Optimize, Reset and New puzzle.
+- `model`, `decode` and `optimal` also receive the player's plan at Optimize, for games where the player shapes the problem (e.g. adds items); most games ignore it. `check.js` solves from `start(puzzle)`.
 - `color` is a token: `plan` (neutral while playing, accent for the optimum), `accent`, `neutral`, `text`, `muted`, `bg`, `good`, `bad`.
 - During the reveal, pieces are matched by `key` (unique per plan). Numbers interpolate, colors blend, pieces only in one plan fade. Emit zero-size pieces instead of omitting them when they should grow.
 - `view` = `{ w, h, px, css, font, em, compact, locked }` (`locked`: the board is locked during and after the reveal; hide play-only hints then); `view.css[token]` is a CSS color string for the seven fixed tokens. `plan` has no entry there: a piece gets its resolved color as `piece.paint`.
