@@ -112,6 +112,9 @@ def main():
         size = slides.eval_on_selector(canvas, "c => [c.width, Math.round(c.getBoundingClientRect().width * devicePixelRatio)]")
         assert size[0] == size[1], f"slide canvas buffer {size}"
         assert slides.query_selector(".present .gamekit-side .gamekit-qr svg"), "QR code missing from the side panel"
+        qr_x, btn_x = slides.evaluate("""() => [document.querySelector('.present .gamekit-qr svg'), document.querySelector('.present .gamekit-buttons button')]
+          .map(e => { const r = e.getBoundingClientRect(); return [Math.round(r.left), Math.round(r.right)]; })""")
+        assert all(abs(a - b) <= 1 for a, b in zip(qr_x, btn_x)), f"QR code edges {qr_x} do not line up with the buttons {btn_x}"
         stage = slides.eval_on_selector(".present .gamekit-stage", "e => e.getBoundingClientRect().right")
         side = slides.eval_on_selector(".present .gamekit-side", "e => e.getBoundingClientRect().left")
         assert side >= stage, f"side panel ({side}) is not right of the board ({stage})"
