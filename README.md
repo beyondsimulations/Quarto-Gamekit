@@ -82,10 +82,10 @@ Gamekit.game("knapsack", {
 - `ui` is a plain object for transient state (e.g. a selection); Gamekit clears it on Optimize, Reset and New puzzle.
 - `color` is a token: `plan` (neutral while playing, accent for the optimum), `accent`, `neutral`, `text`, `muted`, `bg`, `good`, `bad`.
 - During the reveal, pieces are matched by `key` (unique per plan). Numbers interpolate, colors blend, pieces only in one plan fade. Emit zero-size pieces instead of omitting them when they should grow.
-- `view` = `{ w, h, px, css, font, em, compact }`; `view.css[token]` is a CSS color string for the seven fixed tokens. `plan` has no entry there: a piece gets its resolved color as `piece.paint`.
+- `view` = `{ w, h, px, css, font, em, compact, locked }` (`locked`: the board is locked during and after the reveal; hide play-only hints then); `view.css[token]` is a CSS color string for the seven fixed tokens. `plan` has no entry there: a piece gets its resolved color as `piece.paint`.
 - **One text size:** draw all canvas text at `view.em` (the game's HTML text size in board units), so board labels match the task, scores, status and buttons exactly, on slides and phones. Emphasis only through color and weight.
 - **Phones:** on screens narrower than 600 px `view.compact` is true and the board is `compactBoard` if given; lay out finger-sized targets (≥ 44 px) there. Scores, status and buttons then form a panel at the bottom of the screen with the buttons in equal columns; on the game's own page (`games/<name>.html`) it is fixed to the bottom edge and the page title is hidden (the site's top bar shows it).
-- **Slides:** a wide left column with the task above the board, a thin divider, and a narrow right column with the QR code, the game's state and the buttons at the bottom.
+- **Slides:** a wide left column with the task above the board, a thin divider, and a narrow right column with the QR code, the game's state and the buttons at the bottom. The QR code links to `<gamekit.url>/games/<name>.html` when `gamekit.url` is set (so exported or locally served slides still work for phones), otherwise to the page's own address.
 - LP variable names: letters, digits and `_` only.
 
 ## Theme tokens

@@ -112,6 +112,8 @@ def main():
         size = slides.eval_on_selector(canvas, "c => [c.width, Math.round(c.getBoundingClientRect().width * devicePixelRatio)]")
         assert size[0] == size[1], f"slide canvas buffer {size}"
         assert slides.query_selector(".present .gamekit-side .gamekit-qr svg"), "QR code missing from the side panel"
+        qr_url = slides.eval_on_selector(".present .gamekit", "r => r.dataset.qr")
+        assert qr_url == "https://beyondsimulations.github.io/Quarto-Gamekit/games/knapsack.html", f"QR code should use gamekit.url, got {qr_url}"
         qr_x, btn_x = slides.evaluate("""() => [document.querySelector('.present .gamekit-qr svg'), document.querySelector('.present .gamekit-buttons button')]
           .map(e => { const r = e.getBoundingClientRect(); return [Math.round(r.left), Math.round(r.right)]; })""")
         assert all(abs(a - b) <= 1 for a, b in zip(qr_x, btn_x)), f"QR code edges {qr_x} do not line up with the buttons {btn_x}"
