@@ -1,6 +1,6 @@
-// Fixture: a valid game whose check.optimum and think() are wrong on purpose.
+// Fixture: a valid game whose check.optimum, think() and compactBoard.h are wrong on purpose.
 Gamekit.game("wrong-optimum", {
-  title: "t", task: "t", goal: "max", board: { w: 10, h: 10 },
+  title: "t", task: "t", goal: "max", board: { w: 10, h: 10 }, compactBoard: { w: 10, h: () => NaN },
   class: { cap: 1 }, check: { optimum: 99 },
   puzzle() { return { cap: 1 }; },
   start() { return [0]; },

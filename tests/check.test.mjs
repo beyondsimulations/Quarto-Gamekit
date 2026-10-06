@@ -13,5 +13,6 @@ const bad = run("tests/fixtures/wrong-optimum.js");
 assert.equal(bad.status, 1);
 assert.match(bad.stderr, /FAIL wrong-optimum \(class\): optimum 1, expected check.optimum 99/);
 assert.match(bad.stderr, /FAIL wrong-optimum \(class\): think\(\) does not return a string/);
+assert.match(bad.stderr, /FAIL wrong-optimum: compactBoard.h\(em\) must return a positive number/);
 
 console.log("check.test.mjs: all passed");
