@@ -117,4 +117,12 @@ assert.equal(C.formatScore(1500, "€"), "1,500 €");
   assert.equal(ctx.textAlign, "start");
 }
 
+// wrapText: words into lines no wider than w (one unit per character here)
+{
+  const ctx = { measureText: (t) => ({ width: t.length }) };
+  assert.deepEqual(C.wrapText(ctx, "Tap a department to move it.", 12), ["Tap a", "department", "to move it."]);
+  assert.deepEqual(C.wrapText(ctx, "Unbreakableword", 5), ["Unbreakableword"]);
+  assert.deepEqual(C.wrapText(ctx, "", 5), []);
+}
+
 console.log("core.test.mjs: all passed");
