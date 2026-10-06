@@ -67,7 +67,7 @@ Gamekit.game("knapsack", {
                                               // extra plans check.js also solves from (e.g. larger sizes)
   puzzle(rng),                                // → random puzzle; rng() returns [0, 1)
   start(puzzle),                              // → empty plan
-  pointer(puzzle, plan, ui, e, view),         // e = { type, x, y } in board units → new plan or undefined
+  pointer(puzzle, plan, ui, e, view),         // e = { type, x, y, from, moved } in board units → new plan or undefined
   pieces(puzzle, plan, ui, view),             // → [{ key, color, alpha, …numbers }]
   drawBoard(ctx, puzzle, view),               // static background
   drawPiece(ctx, piece, view),                // one piece; use piece.paint, alpha is preset
@@ -90,6 +90,7 @@ Gamekit.game("knapsack", {
 - **Text in boxes:** `GamekitCore.fillCentred(ctx, text, x, y, align)` centres digits and capitals exactly on `y` (canvas's `middle` baseline sits a little off).
 - **Solver time in a `think` line:** `GamekitCore.seconds(ms)` formats it like the built-in line (`0.02 s`).
 - **Text over several lines:** `GamekitCore.wrapText(ctx, text, w)` breaks it into lines no wider than `w`.
+- **Drag:** `e.type` is `"down"`, `"move"` (while pressed), `"up"` or `"cancel"` (the browser took the touch: drop the drag, don't apply it). After a press, `e.from` is where it started and `e.moved` is true once it travelled more than a few screen pixels, so a game tells a tap from a drag without its own threshold. Wherever a game moves things, let them be dragged: act on a tap at release (a press may become a drag), keep the drag in `ui`, draw the result while it hovers (a see-through piece, red with the reason where it can't go), and apply it on release. The canvas captures the pointer, so a drag that leaves the board still ends.
 - **One text size:** draw all canvas text at `view.em` (the game's HTML text size in board units), so board labels match the task, scores, status and buttons exactly, on slides and phones. Emphasis only through color and weight.
 - **Phones:** on screens narrower than 600 px `view.compact` is true and the board is `compactBoard` if given (its `h` can be a function of the text size `em`, so a layout spaced in em fits every phone without gaps); lay out finger-sized targets (≥ 44 px) there. Scores, status and buttons then form a panel at the bottom of the screen with the buttons in equal columns; on the game's own page (`games/<name>.html`) it is fixed to the bottom edge and the page title is hidden (the site's top bar shows it).
 - **Slides:** a wide left column with the task above the board, a thin divider, and a narrow right column with the QR code, the game's state and the buttons at the bottom. The QR code links to `<gamekit.url>/games/<name>.html` when `gamekit.url` is set (so exported or locally served slides still work for phones), otherwise to the page's own address.
