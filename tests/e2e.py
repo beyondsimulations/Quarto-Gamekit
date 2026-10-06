@@ -125,6 +125,11 @@ def main():
         assert slides.evaluate("Reveal.getIndices().h") == before, "tapping the game changed the slide"
         assert slides.inner_text(".present .gk-you .gk-value") == "40 points"
         assert_text_matches(slides, canvas)
+        # the reveal adds the optimal score; the side column must keep its place
+        slides.click(".present button.gk-primary")
+        slides.wait_for_selector(".present >> text=Show yours", timeout=8000)
+        after = slides.eval_on_selector(".present .gamekit-side", "e => e.getBoundingClientRect().left")
+        assert abs(after - side) <= 1, f"side panel moved from {side} to {after} after Optimize"
 
         browser.close()
     assert not errors, errors
