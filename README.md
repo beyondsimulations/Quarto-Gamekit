@@ -59,7 +59,7 @@ format-links: false
 
 ```js
 Gamekit.game("knapsack", {
-  title, task, goal: "max" | "min", unit,     // texts; unit is appended to scores
+  title, task, goal: "max" | "min", unit,     // texts; unit is appended to scores ("€", or ["crate", "crates"])
   board: { w, h, stretch },                   // drawing units; Gamekit scales to pixels
   compactBoard: { w, h },                     // optional: board for phones (screens < 600 px), usually taller
   class: { … },                               // the class puzzle (the lecture's own data)

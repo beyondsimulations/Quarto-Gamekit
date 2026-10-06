@@ -99,6 +99,12 @@ assert.equal(
   "23 yes/no decisions → 10⁷ combinations · HiGHS: 0.003 s",
 );
 
+// formatScore: a [singular, plural] unit
+assert.equal(C.formatScore(1, ["crate", "crates"]), "1 crate");
+assert.equal(C.formatScore(0, ["crate", "crates"]), "0 crates");
+assert.equal(C.formatScore(1.2, ["crate", "crates"]), "1 crate");
+assert.equal(C.formatScore(1500, "€"), "1,500 €");
+
 // fillCentred: the digit height's middle sits on y
 {
   const calls = [];
