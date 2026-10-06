@@ -130,6 +130,12 @@ def main():
         slides.wait_for_selector(".present >> text=Show yours", timeout=8000)
         after = slides.eval_on_selector(".present .gamekit-side", "e => e.getBoundingClientRect().left")
         assert abs(after - side) <= 1, f"side panel moved from {side} to {after} after Optimize"
+        # a score too long for one line wraps inside the column, right-aligned like the other scores
+        slides.eval_on_selector(".present .gk-opt .gk-value", "e => { e.textContent = '1,234,567 points from a much longer unit'; }")
+        col = slides.eval_on_selector(".present .gamekit-side", "e => { const r = e.getBoundingClientRect(); return [r.left, r.right]; }")
+        you_r, opt_r = (slides.eval_on_selector(f".present .{k} .gk-value", "e => e.getBoundingClientRect().right") for k in ("gk-you", "gk-opt"))
+        assert abs(col[0] - side) <= 1, f"side panel moved from {side} to {col[0]} for a long score"
+        assert abs(opt_r - you_r) <= 1 and opt_r <= col[1] + 1, f"long score ends at {opt_r}, 'You' at {you_r}, column at {col[1]}"
 
         browser.close()
     assert not errors, errors

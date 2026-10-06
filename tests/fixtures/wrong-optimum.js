@@ -1,4 +1,4 @@
-// Fixture: a valid game whose check.optimum is wrong on purpose.
+// Fixture: a valid game whose check.optimum and think() are wrong on purpose.
 Gamekit.game("wrong-optimum", {
   title: "t", task: "t", goal: "max", board: { w: 10, h: 10 },
   class: { cap: 1 }, check: { optimum: 99 },
@@ -12,6 +12,7 @@ Gamekit.game("wrong-optimum", {
   score(p, plan) { return plan[0]; },
   model(p) { return `Maximize\n obj: x\nSubject To\n c: x <= ${p.cap}\nEnd\n`; },
   decode(p, values) { return [values.x]; },
+  think() { return undefined; },
   insight() { return { diff: "", mechanism: "", model: "" }; },
   describe() { return ""; },
 });

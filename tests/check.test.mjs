@@ -12,5 +12,6 @@ assert.match(good.stdout, /ok knapsack: class optimum 125/);
 const bad = run("tests/fixtures/wrong-optimum.js");
 assert.equal(bad.status, 1);
 assert.match(bad.stderr, /FAIL wrong-optimum \(class\): optimum 1, expected check.optimum 99/);
+assert.match(bad.stderr, /FAIL wrong-optimum \(class\): think\(\) does not return a string/);
 
 console.log("check.test.mjs: all passed");
