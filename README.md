@@ -75,6 +75,7 @@ Gamekit.game("knapsack", {
   score(puzzle, plan),
   model(puzzle, plan), decode(puzzle, values, plan), // LP text for HiGHS, and values → plan
   // or: optimal(puzzle, plan) and think(puzzle, result) for games solved in JS
+  think(puzzle, { plan, ms, counts }),         // optional with model too: the Think card's line
   insight(puzzle, yours, optimal),            // → { diff, mechanism, model }; `code` in backticks
   describe(puzzle, plan),                     // one line for screen readers
 });
