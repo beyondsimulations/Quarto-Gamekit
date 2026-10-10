@@ -68,14 +68,15 @@ def main():
         assert size[0] == size[1], f"canvas buffer {size}"
         page.click("button.gk-primary")
         page.wait_for_selector(".gamekit-card:has-text('yes/no decisions')", timeout=8000)
-        page.wait_for_selector("text=Show yours", timeout=8000)
+        page.wait_for_selector("button:text-is('Yours')", timeout=8000)
         assert page.inner_text(".gk-opt .gk-value") == "125 points", page.inner_text(".gk-opt")
-        page.click("text=Show yours")
-        page.wait_for_selector("text=Show optimal")
+        page.click("button:text-is('Yours')")
+        page.wait_for_selector("button:text-is('Best')")
+        assert page.get_attribute("button:text-is('Best')", "aria-label") == "Show the best plan"
         page.click("text=Why?")
         assert "Your bag: Tent, Camera" in page.inner_text(".gamekit-card")
         assert page.evaluate("window.__ev") == ["game-start", "game-optimize", "game-why"], page.evaluate("window.__ev")
-        page.click("text=New puzzle")
+        page.click("button:text-is('New')")
         assert page.inner_text(".gk-you .gk-value") == "0 points"
 
         # 2. phone page, touch, reduced motion: reveal is instant
@@ -100,8 +101,14 @@ def main():
         assert boxes[0]["left"] < 30 and boxes[-1]["right"] > 360, f"buttons do not span the width: {boxes[0]['left']}..{boxes[-1]['right']}"
         assert boxes[0]["bottom"] > 844 - 30, f"buttons are not at the bottom of the screen: {boxes[0]['bottom']}"
         phone.click("button.gk-primary")
-        phone.wait_for_selector("text=Show yours", timeout=3000)
+        phone.wait_for_selector("button:text-is('Yours')", timeout=3000)
         assert phone.inner_text(".gk-opt .gk-value") == "125 points"
+        # after Optimize four buttons share the row: every label on one line, down to a 320 px phone
+        for width in (390, 320):
+            phone.set_viewport_size({"width": width, "height": 844})
+            fits = phone.evaluate("""() => [...document.querySelectorAll('.gamekit-buttons button:not([hidden])')]
+              .map(b => [b.textContent, b.scrollWidth <= b.clientWidth, Math.round(b.getBoundingClientRect().height)])""")
+            assert len(fits) == 4 and all(f[1] for f in fits) and len({f[2] for f in fits}) == 1, f"button labels at {width}px: {fits}"
 
         # 3. slides at projector size: crisp canvas, QR code, taps don't change slides
         slides = browser.new_page(viewport={"width": 1920, "height": 1080})
@@ -127,7 +134,7 @@ def main():
         assert_text_matches(slides, canvas)
         # the reveal adds the optimal score; the side column must keep its place
         slides.click(".present button.gk-primary")
-        slides.wait_for_selector(".present >> text=Show yours", timeout=8000)
+        slides.wait_for_selector(".present >> button:text-is('Yours')", timeout=8000)
         after = slides.eval_on_selector(".present .gamekit-side", "e => e.getBoundingClientRect().left")
         assert abs(after - side) <= 1, f"side panel moved from {side} to {after} after Optimize"
         # a score too long for one line wraps inside the column, right-aligned like the other scores

@@ -6,7 +6,7 @@ same model live in their browser (WebAssembly, in a Web Worker). Gamekit then
 morphs the student's plan into the optimal one and explains the difference.
 
 - **One div per game**: `::: {.game name="transport"}` in any page or revealjs deck.
-- **Shared reveal**: Lock → Think (real solver numbers) → Morph → Toggle *Yours ⇄ Optimal* → **Why?**
+- **Shared reveal**: Lock → Think (real solver numbers) → Morph → Toggle *Yours ⇄ Best* → **Why?**
 - **Class puzzle + New puzzle**: everyone plays the lecture's own data; random puzzles for practice.
 - **Branded automatically**: colors come from `--gk-*` CSS tokens that fall back to the site's Bootstrap or reveal variables.
 - **Every format**: playable in html and revealjs (with a QR code to a phone page); a one-line link in typst, hugo-md and others.
@@ -82,7 +82,7 @@ Gamekit.game("knapsack", {
 ```
 
 - `board.stretch: true` lets the board grow wider than `w` on slides to fill the stage, so its edges line up with the task text; lay out with `view.w`.
-- `ui` is a plain object for transient state (e.g. a selection); Gamekit clears it on Optimize, Reset and New puzzle.
+- `ui` is a plain object for transient state (e.g. a selection); Gamekit clears it on Optimize, Reset and New.
 - `model`, `decode` and `optimal` also receive the player's plan at Optimize, for games where the player shapes the problem (e.g. adds items); most games ignore it. `check.js` solves from `start(puzzle)`.
 - `color` is a token: `plan` (neutral while playing, accent for the optimum), `accent`, `neutral`, `text`, `muted`, `bg`, `good`, `bad`.
 - During the reveal, pieces are matched by `key` (unique per plan). Numbers interpolate, colors blend, pieces only in one plan fade. Emit zero-size pieces instead of omitting them when they should grow.
