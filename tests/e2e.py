@@ -123,6 +123,10 @@ def main():
         size = slides.eval_on_selector(canvas, "c => [c.width, Math.round(c.getBoundingClientRect().width * devicePixelRatio)]")
         assert size[0] == size[1], f"slide canvas buffer {size}"
         assert slides.query_selector(".present .gamekit-side .gamekit-qr svg"), "QR code missing from the side panel"
+        # the game takes the height the slide has left: its bottom edge is the stage's, on any stage size
+        gap = slides.evaluate("""() => { const s = Reveal.getScale(), b = e => document.querySelector(e).getBoundingClientRect().bottom;
+          return Math.round((b('.reveal .slides') - b('.present .gamekit')) / s); }""")
+        assert 0 <= gap <= 2, f"game ends {gap}px above the slide's bottom edge"
         qr_url = slides.eval_on_selector(".present .gamekit", "r => r.dataset.qr")
         assert qr_url == "https://beyondsimulations.github.io/Quarto-Gamekit/games/knapsack.html", f"QR code should use gamekit.url, got {qr_url}"
         qr_x, btn_x = slides.evaluate("""() => [document.querySelector('.present .gamekit-qr svg'), document.querySelector('.present .gamekit-buttons button')]

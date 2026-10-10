@@ -88,8 +88,10 @@
 
 /* Slides: a wide left column with the task text above the board, a lane with
    a thin divider, and a narrow right column: QR code, then the game's state
-   (scores, status), then the buttons pinned to the bottom. The fixed height
-   keeps the slide inside the overflow gate. */
+   (scores, status), then the buttons pinned to the bottom. reveal.js sets the
+   height to what the slide has left below its heading (r-stretch), whatever
+   the stage size; the height here only holds where it cannot, a game nested
+   in another block. */
 .reveal .gamekit-slide {
   font-size: 22px;
   height: 575px;
