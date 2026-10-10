@@ -79,12 +79,11 @@
   function setScore(node, label, value) {
     node.replaceChildren(el("span", { class: "gk-label" }, label), el("span", { class: "gk-value" }, value));
   }
-  // Button words are short: after Optimize four buttons share one row on a phone
-  // (about 53 px of text each at 320 px), and "Show optimal" or "New puzzle" broke
-  // onto a second line. The full action stays as the accessible name.
+  // Buttons carry one short word, so that four of them fit one row on a phone;
+  // the full action is the accessible name. The toggle names the plan it leads to.
   function labelToggle(btn, toYours) {
-    btn.textContent = toYours ? "Yours" : "Best";
-    btn.setAttribute("aria-label", toYours ? "Show yours" : "Show the best plan");
+    btn.textContent = toYours ? "Yours" : "Optimal";
+    btn.setAttribute("aria-label", toYours ? "Show yours" : "Show optimal");
   }
   const cssOf = (rgb) => {
     const out = {};
@@ -127,11 +126,12 @@
     const buttons = el("div", { class: "gamekit-buttons" });
     g.btn = {
       optimize: el("button", { type: "button", class: "gk-primary" }, "Optimize"),
-      toggle: el("button", { type: "button", hidden: "", "aria-label": "Show yours" }, "Yours"),
+      toggle: el("button", { type: "button", hidden: "" }),
       why: el("button", { type: "button", hidden: "" }, "Why?"),
       reset: el("button", { type: "button" }, "Reset"),
       fresh: el("button", { type: "button", "aria-label": "New puzzle" }, "New"),
     };
+    labelToggle(g.btn.toggle, true);
     buttons.append(g.btn.optimize, g.btn.toggle, g.btn.why, g.btn.reset, g.btn.fresh);
     g.status = el("p", { class: "gamekit-status" });
     g.sr = el("p", { class: "gamekit-sr", "aria-live": "polite" });

@@ -6,7 +6,7 @@ same model live in their browser (WebAssembly, in a Web Worker). Gamekit then
 morphs the student's plan into the optimal one and explains the difference.
 
 - **One div per game**: `::: {.game name="transport"}` in any page or revealjs deck.
-- **Shared reveal**: Lock → Think (real solver numbers) → Morph → Toggle *Yours ⇄ Best* → **Why?**
+- **Shared reveal**: Lock → Think (real solver numbers) → Morph → Toggle *Yours ⇄ Optimal* → **Why?**
 - **Class puzzle + New puzzle**: everyone plays the lecture's own data; random puzzles for practice.
 - **Branded automatically**: colors come from `--gk-*` CSS tokens that fall back to the site's Bootstrap or reveal variables.
 - **Every format**: playable in html and revealjs (with a QR code to a phone page); a one-line link in typst, hugo-md and others.

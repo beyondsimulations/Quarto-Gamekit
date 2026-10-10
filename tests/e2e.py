@@ -71,8 +71,8 @@ def main():
         page.wait_for_selector("button:text-is('Yours')", timeout=8000)
         assert page.inner_text(".gk-opt .gk-value") == "125 points", page.inner_text(".gk-opt")
         page.click("button:text-is('Yours')")
-        page.wait_for_selector("button:text-is('Best')")
-        assert page.get_attribute("button:text-is('Best')", "aria-label") == "Show the best plan"
+        page.wait_for_selector("button:text-is('Optimal')")
+        assert page.get_attribute("button:text-is('Optimal')", "aria-label") == "Show optimal"
         page.click("text=Why?")
         assert "Your bag: Tent, Camera" in page.inner_text(".gamekit-card")
         assert page.evaluate("window.__ev") == ["game-start", "game-optimize", "game-why"], page.evaluate("window.__ev")
@@ -103,12 +103,16 @@ def main():
         phone.click("button.gk-primary")
         phone.wait_for_selector("button:text-is('Yours')", timeout=3000)
         assert phone.inner_text(".gk-opt .gk-value") == "125 points"
-        # after Optimize four buttons share the row: every label on one line, down to a 320 px phone
+        # after Optimize four buttons share the row: every label on one line and nothing
+        # wider than the screen, down to a 320 px phone, with the widest word showing
+        phone.click("button:text-is('Yours')")
+        phone.wait_for_selector("button:text-is('Optimal')")
         for width in (390, 320):
             phone.set_viewport_size({"width": width, "height": 844})
             fits = phone.evaluate("""() => [...document.querySelectorAll('.gamekit-buttons button:not([hidden])')]
               .map(b => [b.textContent, b.scrollWidth <= b.clientWidth, Math.round(b.getBoundingClientRect().height)])""")
             assert len(fits) == 4 and all(f[1] for f in fits) and len({f[2] for f in fits}) == 1, f"button labels at {width}px: {fits}"
+            assert phone.evaluate("document.documentElement.scrollWidth <= innerWidth"), f"page wider than the screen at {width}px"
 
         # 3. slides at projector size: crisp canvas, QR code, taps don't change slides
         slides = browser.new_page(viewport={"width": 1920, "height": 1080})
