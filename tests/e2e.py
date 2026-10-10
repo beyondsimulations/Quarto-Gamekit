@@ -127,6 +127,16 @@ def main():
         gap = slides.evaluate("""() => { const s = Reveal.getScale(), b = e => document.querySelector(e).getBoundingClientRect().bottom;
           return Math.round((b('.reveal .slides') - b('.present .gamekit')) / s); }""")
         assert 0 <= gap <= 2, f"game ends {gap}px above the slide's bottom edge"
+        inset = slides.evaluate("""() => { const s = Reveal.getScale(), b = e => document.querySelector(e).getBoundingClientRect().bottom;
+          return Math.round((b('.present .gamekit') - b('.present .gamekit-buttons')) / s); }""")
+        assert 8 <= inset <= 16, f"buttons end {inset}px above the game's bottom edge"
+        # reveal's scroll view (narrow phones) sets the stretched height to 0: the game keeps its fixed height
+        narrow = browser.new_page(viewport={"width": 400, "height": 800})
+        narrow.goto(BASE + "/slides.html#/pack-the-bag")
+        narrow.wait_for_timeout(1500)
+        h = narrow.evaluate("() => { const g = document.querySelector('.gamekit-slide'); return [g.style.height, g.offsetHeight, g.querySelector('canvas').offsetHeight]; }")
+        assert h[1] >= 575 and h[2] > 300, f"game collapsed in the scroll view: inline height {h[0]}, box {h[1]}px, canvas {h[2]}px"
+        narrow.close()
         qr_url = slides.eval_on_selector(".present .gamekit", "r => r.dataset.qr")
         assert qr_url == "https://beyondsimulations.github.io/Quarto-Gamekit/games/knapsack.html", f"QR code should use gamekit.url, got {qr_url}"
         qr_x, btn_x = slides.evaluate("""() => [document.querySelector('.present .gamekit-qr svg'), document.querySelector('.present .gamekit-buttons button')]
