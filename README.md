@@ -10,6 +10,7 @@ morphs the student's plan into the optimal one and explains the difference.
 - **Class puzzle + New puzzle**: everyone plays the lecture's own data; random puzzles for practice.
 - **Branded automatically**: colors come from `--gk-*` CSS tokens that fall back to the site's Bootstrap or reveal variables.
 - **Every format**: playable in html and revealjs (with a QR code to a phone page); a one-line link in typst, hugo-md and others.
+- **English and German**: buttons, scores, status and the Think card follow the document's `lang` (`de` for German, English otherwise); a game's own texts are the game's.
 - **Anonymous telemetry**: if the page loads [umami](https://umami.is), `game-start`, `game-optimize` and `game-why` events fire automatically (same rules as Quizkit).
 - **Checked in Node**: `check.js` solves every game's class puzzle and compares it with the optimum from your JuMP model.
 
@@ -60,6 +61,7 @@ format-links: false
 ```js
 Gamekit.game("knapsack", {
   title, task, goal: "max" | "min", unit,     // texts; unit is appended to scores ("€", or ["crate", "crates"])
+  digits,                                     // optional: decimal places of scores (default 0), for optima like 112.5
   board: { w, h, stretch },                   // drawing units; Gamekit scales to pixels
   compactBoard: { w, h },                     // optional: board for phones (screens < 600 px); h may be em => units
   class: { … },                               // the class puzzle (the lecture's own data)
@@ -95,6 +97,17 @@ Gamekit.game("knapsack", {
 - **Phones:** on screens narrower than 600 px `view.compact` is true and the board is `compactBoard` if given (its `h` can be a function of the text size `em`, so a layout spaced in em fits every phone without gaps); lay out finger-sized targets (≥ 44 px) there. Scores, status and buttons then form a panel at the bottom of the screen with the buttons in equal columns; on the game's own page (`games/<name>.html`) it is fixed to the bottom edge and the page title is hidden (the site's top bar shows it).
 - **Slides:** a wide left column with the task above the board, a thin divider, and a narrow right column with the QR code, the game's state and the buttons at the bottom. The game fills the height the slide has left below its heading, on any stage size; put the div directly on the slide, not inside columns or another block. The QR code links to `<gamekit.url>/games/<name>.html` when `gamekit.url` is set (so exported or locally served slides still work for phones), otherwise to the page's own address.
 - LP variable names: letters, digits and `_` only.
+
+## Language
+
+Gamekit's own texts (the buttons, the score labels, the status line, the
+Think card and the link line of non-html formats) follow the document's
+`lang`: German for `lang: de`, English for everything else. Numbers follow
+it too: `GamekitCore.formatScore` and `GamekitCore.seconds` write `225.460 €`
+and `0,02 s` on a German page. The German texts use neither du nor Sie. A
+game's texts (`title`, `task`, `insight`, canvas labels) are written in the
+game file in the course's language. Another language is one more table in
+`TEXTS` in `core.js`.
 
 ## Theme tokens
 

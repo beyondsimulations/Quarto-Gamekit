@@ -3,6 +3,7 @@
 (function () {
   "use strict";
   const C = globalThis.GamekitCore;
+  const T = C.setLang(document.documentElement.lang); // the page's language, English otherwise
   const BASE = document.currentScript ? document.currentScript.src : location.href;
   const TOKENS = ["accent", "neutral", "text", "muted", "bg", "good", "bad"];
   const THINK_MS = 1000;
@@ -33,7 +34,7 @@
       // Drop the dead worker so the next solve starts a fresh one.
       worker.terminate();
       worker = null;
-      for (const job of pending.values()) job.reject(new Error(e.message || "The solver failed to load."));
+      for (const job of pending.values()) job.reject(new Error(e.message || T.solverLoad));
       pending.clear();
     };
     return worker;
@@ -82,8 +83,8 @@
   // Buttons carry one short word, so that four of them fit one row on a phone;
   // the full action is the accessible name. The toggle names the plan it leads to.
   function labelToggle(btn, toYours) {
-    btn.textContent = toYours ? "Yours" : "Optimal";
-    btn.setAttribute("aria-label", toYours ? "Show yours" : "Show optimal");
+    btn.textContent = toYours ? T.yours : T.optimal;
+    btn.setAttribute("aria-label", toYours ? T.showYours : T.showOptimal);
   }
   const cssOf = (rgb) => {
     const out = {};
@@ -95,7 +96,7 @@
   function mount(root) {
     const def = defs[root.dataset.game];
     if (!def) {
-      root.textContent = `Gamekit: game "${root.dataset.game}" was not found.`;
+      root.textContent = T.missing(root.dataset.game);
       return;
     }
     const g = { def, root, ui: {}, phase: "play", started: false, revealed: false, skip: false, raf: 0, run: 0 };
@@ -125,11 +126,11 @@
     scores.append(g.you, g.opt);
     const buttons = el("div", { class: "gamekit-buttons" });
     g.btn = {
-      optimize: el("button", { type: "button", class: "gk-primary" }, "Optimize"),
+      optimize: el("button", { type: "button", class: "gk-primary" }, T.optimize),
       toggle: el("button", { type: "button", hidden: "" }),
-      why: el("button", { type: "button", hidden: "" }, "Why?"),
-      reset: el("button", { type: "button" }, "Reset"),
-      fresh: el("button", { type: "button", "aria-label": "New puzzle" }, "New"),
+      why: el("button", { type: "button", hidden: "" }, T.why),
+      reset: el("button", { type: "button" }, T.reset),
+      fresh: el("button", { type: "button", "aria-label": T.freshLabel }, T.fresh),
     };
     labelToggle(g.btn.toggle, true);
     buttons.append(g.btn.optimize, g.btn.toggle, g.btn.why, g.btn.reset, g.btn.fresh);
@@ -200,7 +201,7 @@
     let d = "";
     for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (qr.isDark(r, c)) d += `M${c} ${r}h1v1h-1z`;
     // not <aside>: Quarto styles slide asides as margin notes
-    const box = el("div", { class: "gamekit-qr", role: "img", "aria-label": "QR code: " + url });
+    const box = el("div", { class: "gamekit-qr", role: "img", "aria-label": T.qr + url });
     box.innerHTML = `<svg viewBox="0 0 ${n} ${n}" shape-rendering="crispEdges" aria-hidden="true"><path fill="currentColor" d="${d}"/></svg>`;
     return box;
   }
@@ -368,9 +369,9 @@
   }
   function update(g) {
     const ok = g.def.feasible(g.puzzle, g.plan);
-    setScore(g.you, "You", C.formatScore(g.def.score(g.puzzle, g.plan), g.def.unit));
+    setScore(g.you, T.you, C.formatScore(g.def.score(g.puzzle, g.plan), g.def.unit, g.def.digits));
     g.btn.optimize.disabled = ok !== true;
-    g.status.textContent = ok === true ? "Ready: press Optimize to compare with the best plan." : ok;
+    g.status.textContent = ok === true ? T.ready : ok;
     const said = g.def.describe(g.puzzle, g.plan);
     if (g.sr.textContent !== said) g.sr.textContent = said; // identical rewrites can be re-announced
     reserveBottom(g);
@@ -394,7 +395,7 @@
     g.yours = g.plan;
     const yourScore = g.def.score(g.puzzle, g.yours);
     g.btn.optimize.disabled = true;
-    showCard(g, [el("p", null, "Thinking…")], true);
+    showCard(g, [el("p", null, T.thinking)], true);
     redraw(g);
     const t0 = performance.now();
     let line, optScore, pairs;
@@ -406,7 +407,7 @@
       } else {
         // the player's plan is passed on: a game may let the player size the problem
         const r = await solveLP(g.def.model(g.puzzle, g.yours));
-        if (r.status !== "Optimal") throw new Error("Solver: " + r.status);
+        if (r.status !== "Optimal") throw new Error(T.solver + r.status);
         g.optimal = g.def.decode(g.puzzle, r.values, g.yours);
         // a game may phrase the Think card itself, e.g. when helper variables
         // would make the generic count misleading
@@ -435,7 +436,7 @@
     g.status.textContent = "";
     g.opt.hidden = false;
     animate(g, g.yours, "yours", g.optimal, "optimal", g.skip || reducedMotion() ? 0 : MORPH_MS, (q) => {
-      setScore(g.opt, "Optimal", C.formatScore(yourScore + (optScore - yourScore) * C.ease(q), g.def.unit));
+      setScore(g.opt, T.optimal, C.formatScore(yourScore + (optScore - yourScore) * C.ease(q), g.def.unit, g.def.digits));
     }, pairs, () => {
       g.showing = "optimal";
       g.revealed = true;

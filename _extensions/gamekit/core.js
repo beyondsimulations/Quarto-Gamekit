@@ -4,6 +4,40 @@
 (function () {
   "use strict";
 
+  // The runtime's own texts per language (a game's texts are the game's). The
+  // browser runtime picks one from the page's `lang`; Node (check.js) and
+  // languages without a table use English.
+  const TEXTS = {
+    en: {
+      locale: "en-US", decimal: ".",
+      optimize: "Optimize", why: "Why?", reset: "Reset", fresh: "New", freshLabel: "New puzzle",
+      yours: "Yours", optimal: "Optimal", showYours: "Show yours", showOptimal: "Show optimal", you: "You",
+      thinking: "Thinking…", ready: "Ready: press Optimize to compare with the best plan.",
+      missing: (name) => `Gamekit: game "${name}" was not found.`, qr: "QR code: ",
+      solverLoad: "The solver failed to load.", solver: "Solver: ",
+      decisions: "decisions", continuous: "continuous decisions", yesNo: "yes/no decisions",
+      whole: "whole-number decisions", infinite: "infinitely many plans", combinations: "combinations",
+    },
+    // German without du or Sie, so it fits courses of either kind
+    de: {
+      locale: "de-DE", decimal: ",",
+      optimize: "Optimieren", why: "Warum?", reset: "Reset", fresh: "Neu", freshLabel: "Neue Aufgabe",
+      yours: "Eigener", optimal: "Optimal", showYours: "Eigenen Plan zeigen", showOptimal: "Optimalen Plan zeigen",
+      you: "Eigener Plan",
+      thinking: "Rechne …", ready: "Bereit: „Optimieren“ vergleicht den Plan mit dem besten.",
+      missing: (name) => `Gamekit: Das Spiel „${name}“ wurde nicht gefunden.`, qr: "QR-Code: ",
+      solverLoad: "Der Solver konnte nicht geladen werden.", solver: "Solver: ",
+      decisions: "Entscheidungen", continuous: "stetige Entscheidungen", yesNo: "Ja/Nein-Entscheidungen",
+      whole: "ganzzahlige Entscheidungen", infinite: "unendlich viele Pläne", combinations: "Kombinationen",
+    },
+  };
+  let T = TEXTS.en;
+  // "de", "de-DE", "DE" → the German table; returns the table now in use.
+  function setLang(lang) {
+    T = TEXTS[String(lang || "").slice(0, 2).toLowerCase()] || TEXTS.en;
+    return T;
+  }
+
   // mulberry32: small seeded PRNG returning floats in [0, 1).
   function rng(seed) {
     let a = seed >>> 0;
@@ -128,7 +162,7 @@
 
   function seconds(ms) {
     const s = ms / 1000;
-    return (s < 0.01 ? s.toPrecision(1) : s.toFixed(2)) + " s";
+    return (s < 0.01 ? s.toPrecision(1) : s.toFixed(2)).replace(".", T.decimal) + " s";
   }
 
   // Think-card line from the solver's variable counts.
@@ -137,13 +171,13 @@
     const n = counts.binary + counts.integer + counts.continuous;
     const time = "HiGHS: " + seconds(ms);
     if (counts.continuous > 0 || !Number.isFinite(counts.log10Combos)) {
-      const kind = counts.binary + counts.integer === 0 ? "continuous decisions" : "decisions";
-      return `${n} ${kind} → infinitely many plans · ${time}`;
+      const kind = counts.binary + counts.integer === 0 ? T.continuous : T.decisions;
+      return `${n} ${kind} → ${T.infinite} · ${time}`;
     }
-    const kind = counts.integer === 0 ? "yes/no decisions" : "whole-number decisions";
+    const kind = counts.integer === 0 ? T.yesNo : T.whole;
     const k = counts.log10Combos;
-    const combos = k < 6 ? Math.round(Math.pow(10, k)).toLocaleString("en-US") : "10" + sup(Math.round(k));
-    return `${n} ${kind} → ${combos} combinations · ${time}`;
+    const combos = k < 6 ? Math.round(Math.pow(10, k)).toLocaleString(T.locale) : "10" + sup(Math.round(k));
+    return `${n} ${kind} → ${combos} ${T.combinations} · ${time}`;
   }
 
   // Canvas pixel buffer for a canvas shown at rectW × rectH CSS pixels. The
@@ -160,10 +194,12 @@
       .filter((s) => s.text !== "");
   }
 
-  // unit: a string, or [singular, plural] (e.g. ["crate", "crates"])
-  function formatScore(value, unit) {
-    const r = Math.round(value) + 0; // + 0 turns -0 into 0
-    const n = r.toLocaleString("en-US");
+  // unit: a string, or [singular, plural] (e.g. ["crate", "crates"]); digits:
+  // decimal places for games whose optimum is not whole (default 0)
+  function formatScore(value, unit, digits) {
+    const f = Math.pow(10, digits || 0);
+    const r = Math.round(value * f) / f + 0; // + 0 turns -0 into 0
+    const n = r.toLocaleString(T.locale, { maximumFractionDigits: digits || 0 });
     const u = Array.isArray(unit) ? unit[r === 1 ? 0 : 1] : unit;
     return u ? `${n} ${u}` : n;
   }
@@ -190,6 +226,6 @@
 
   globalThis.GamekitCore = {
     rng, pair, frame, resolve, assertUniqueKeys, parseColor, css, gap, thinkLine, seconds,
-    pixelSize, codeSpans, formatScore, ease, fillCentred, wrapText,
+    pixelSize, codeSpans, formatScore, ease, fillCentred, wrapText, setLang,
   };
 })();

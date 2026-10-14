@@ -105,6 +105,28 @@ assert.equal(C.formatScore(0, ["crate", "crates"]), "0 crates");
 assert.equal(C.formatScore(1.2, ["crate", "crates"]), "1 crate");
 assert.equal(C.formatScore(1500, "€"), "1,500 €");
 
+// setLang: the runtime's texts and number format follow the page's language;
+// unknown languages fall back to English
+assert.equal(C.setLang("de-DE").optimize, "Optimieren");
+assert.equal(C.formatScore(225460, "€"), "225.460 €");
+assert.equal(C.seconds(20), "0,02 s");
+assert.equal(
+  C.thinkLine({ binary: 0, integer: 0, continuous: 6, log10Combos: 0 }, 20),
+  "6 stetige Entscheidungen → unendlich viele Pläne · HiGHS: 0,02 s",
+);
+assert.equal(
+  C.thinkLine({ binary: 6, integer: 0, continuous: 0, log10Combos: 6 * Math.log10(2) }, 20),
+  "6 Ja/Nein-Entscheidungen → 64 Kombinationen · HiGHS: 0,02 s",
+);
+assert.equal(C.setLang("fr").optimize, "Optimize");
+assert.equal(C.setLang().optimize, "Optimize");
+assert.equal(C.formatScore(1500, "€"), "1,500 €");
+assert.equal(C.formatScore(112.5, "€", 2), "112.5 €");
+assert.equal(C.formatScore(112.5, "€"), "113 €");
+assert.equal(C.setLang("de").optimize, "Optimieren");
+assert.equal(C.formatScore(112.5, "€", 2), "112,5 €");
+C.setLang("en");
+
 // fillCentred: the digit height's middle sits on y
 {
   const calls = [];
