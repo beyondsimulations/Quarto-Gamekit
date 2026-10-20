@@ -24,4 +24,7 @@ const sense = run("tests/fixtures/wrong-sense.js");
 assert.equal(sense.status, 1);
 assert.match(sense.stderr, /FAIL wrong-sense \(class\): goal is "min", but the model does not open with Minimize/);
 
+const commented = run("tests/fixtures/commented-lp.js");
+assert.equal(commented.status, 0, commented.stderr);
+
 console.log("check.test.mjs: all passed");

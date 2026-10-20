@@ -88,7 +88,14 @@ def main():
         page.evaluate("document.activeElement.blur()")  # e.g. a click elsewhere on the page
         page.keyboard.press("Escape")
         assert page.is_hidden(".gamekit-card"), "Escape closes the Why card after the focus left the game"
-        assert page.evaluate("window.__ev") == ["game-start", "game-optimize", "game-why", "game-why", "game-why"], page.evaluate("window.__ev")
+        page.click("text=Why?")
+        page.evaluate("document.body.append(Object.assign(document.createElement('input'), { id: 'other' }))")
+        page.focus("#other")  # e.g. a search box or a chat window
+        page.keyboard.press("Escape")
+        assert page.is_visible(".gamekit-card"), "Escape in another widget closed the Why card"
+        page.evaluate("document.getElementById('other').remove()")
+        page.click(".gamekit-card-close")
+        assert page.evaluate("window.__ev") == ["game-start", "game-optimize", "game-why", "game-why", "game-why", "game-why"], page.evaluate("window.__ev")
         page.click("button:text-is('New')")
         assert page.inner_text(".gk-you .gk-value") == "0 points"
         # the panel in the middle of the screen: no floating button to make way for
