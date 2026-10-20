@@ -147,4 +147,47 @@ C.setLang("en");
   assert.deepEqual(C.wrapText(ctx, "", 5), []);
 }
 
+// joinList: "a, b and c" in the page's language
+{
+  assert.equal(C.joinList([]), "");
+  assert.equal(C.joinList(["a"]), "a");
+  assert.equal(C.joinList(["a", "b"]), "a and b");
+  assert.equal(C.joinList(["a", "b", "c"]), "a, b and c");
+  C.setLang("de");
+  assert.equal(C.joinList(["1", "3", "5"]), "1, 3 und 5");
+  C.setLang("en");
+}
+
+// subscript: digits and the minus lowered, nothing dropped
+{
+  assert.equal(C.subscript(12), "₁₂");
+  assert.equal(C.subscript(-1), "₋₁");
+  assert.equal(C.subscript(1.5), "₁.₅");
+}
+
+// fillRuns: one line in several fonts, centred on y like fillCentred
+{
+  const calls = [];
+  const ctx = {
+    measureText: (t) => ({ width: t.length, actualBoundingBoxAscent: 10 }),
+    fillText(t, x, y) { calls.push([t, x, y, this.font]); },
+  };
+  const runs = [["ab", "bold"], ["c", "small", 2]];
+  assert.equal(C.fillRuns(ctx, runs, 10, 20), 3);
+  assert.deepEqual(calls, [["ab", 8.5, 25, "bold"], ["c", 10.5, 27, "small"]]); // centre by default
+  assert.equal(ctx.font, "bold");
+  assert.equal(ctx.textAlign, "start");
+  calls.length = 0;
+  C.fillRuns(ctx, runs, 10, 20, "start");
+  C.fillRuns(ctx, runs, 10, 20, "end");
+  C.fillRuns(ctx, runs, 10, 20, "right");
+  assert.deepEqual(calls.map((c) => c[1]), [10, 12, 7, 9, 7, 9]);
+}
+
+// goalOf: a string, or a function of the puzzle
+{
+  assert.equal(C.goalOf({ goal: "max" }, {}), "max");
+  assert.equal(C.goalOf({ goal: (p) => (p.up ? "max" : "min") }, { up: false }), "min");
+}
+
 console.log("core.test.mjs: all passed");

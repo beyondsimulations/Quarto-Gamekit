@@ -10,18 +10,19 @@
   const TEXTS = {
     en: {
       locale: "en-US", decimal: ".",
-      optimize: "Optimize", why: "Why?", reset: "Reset", fresh: "New", freshLabel: "New puzzle",
+      optimize: "Optimize", why: "Why?", reset: "Reset", fresh: "New", freshLabel: "New puzzle", close: "Close",
       yours: "Yours", optimal: "Optimal", showYours: "Show yours", showOptimal: "Show optimal", you: "You",
       thinking: "Thinking…", ready: "Ready: press Optimize to compare with the best plan.",
       missing: (name) => `Gamekit: game "${name}" was not found.`, qr: "QR code: ",
       solverLoad: "The solver failed to load.", solver: "Solver: ",
       decisions: "decisions", continuous: "continuous decisions", yesNo: "yes/no decisions",
       whole: "whole-number decisions", infinite: "infinitely many plans", combinations: "combinations",
+      and: "and",
     },
     // German without du or Sie, so it fits courses of either kind
     de: {
       locale: "de-DE", decimal: ",",
-      optimize: "Optimieren", why: "Warum?", reset: "Reset", fresh: "Neu", freshLabel: "Neue Aufgabe",
+      optimize: "Optimieren", why: "Warum?", reset: "Reset", fresh: "Neu", freshLabel: "Neue Aufgabe", close: "Schließen",
       yours: "Eigener", optimal: "Optimal", showYours: "Eigenen Plan zeigen", showOptimal: "Optimalen Plan zeigen",
       you: "Eigener Plan",
       thinking: "Rechne …", ready: "Bereit: „Optimieren“ vergleicht den Plan mit dem besten.",
@@ -29,6 +30,7 @@
       solverLoad: "Der Solver konnte nicht geladen werden.", solver: "Solver: ",
       decisions: "Entscheidungen", continuous: "stetige Entscheidungen", yesNo: "Ja/Nein-Entscheidungen",
       whole: "ganzzahlige Entscheidungen", infinite: "unendlich viele Pläne", combinations: "Kombinationen",
+      and: "und",
     },
   };
   let T = TEXTS.en;
@@ -157,8 +159,13 @@
     return Math.round((100 * Math.abs(score - optimum)) / Math.abs(optimum));
   }
 
-  const SUP = "⁰¹²³⁴⁵⁶⁷⁸⁹";
-  const sup = (n) => String(n).split("").map((d) => SUP[Number(d)]).join("");
+  // 12 → "¹²" or "₁₂": a minus is raised or lowered too, anything else (a
+  // decimal point) stays as it is instead of vanishing
+  const digitsIn = (table, minus) => (n) =>
+    String(n).split("").map((d) => (d >= "0" && d <= "9" ? table[Number(d)] : d === "-" ? minus : d)).join("");
+  const sup = digitsIn("⁰¹²³⁴⁵⁶⁷⁸⁹", "⁻");
+  // for names like X₁ or P₁₂ in a game's texts
+  const subscript = digitsIn("₀₁₂₃₄₅₆₇₈₉", "₋");
 
   function seconds(ms) {
     const s = ms / 1000;
@@ -207,10 +214,11 @@
   // Draws text whose digits and capitals are centred on y: canvas's "middle"
   // baseline centres the font's em box, which leaves labels a little off the
   // middle of their boxes. align: "center" (default), "start" or "end".
+  const centredBaseline = (ctx, y) => y + ctx.measureText("0").actualBoundingBoxAscent / 2;
   function fillCentred(ctx, text, x, y, align) {
     ctx.textAlign = align || "center";
     ctx.textBaseline = "alphabetic";
-    ctx.fillText(text, x, y + ctx.measureText("0").actualBoundingBoxAscent / 2);
+    ctx.fillText(text, x, centredBaseline(ctx, y));
   }
 
   // Words into lines no wider than `w` at the context's current font.
@@ -224,8 +232,40 @@
     return line ? [...lines, line] : lines;
   }
 
+  // ["a", "b", "c"] → "a, b and c" in the page's language ("a, b und c")
+  function joinList(xs) {
+    return xs.length < 2 ? xs.join("") : `${xs.slice(0, -1).join(", ")} ${T.and} ${xs[xs.length - 1]}`;
+  }
+
+  // One line in several fonts, e.g. a bold label and its value or a symbol with a
+  // subscript: runs = [[text, font, dy?], …], dy moves a run down (board units).
+  // Like fillCentred: centred on y (measured on the first run's font) and align
+  // "center" (default), "start"/"left" or "end"/"right". Leaves the first run's
+  // font set and returns the line's width.
+  function fillRuns(ctx, runs, x, y, align) {
+    ctx.font = runs[0][1];
+    const base = centredBaseline(ctx, y);
+    const widths = runs.map(([text, font]) => { ctx.font = font; return ctx.measureText(text).width; });
+    const total = widths.reduce((a, b) => a + b, 0);
+    const a = align || "center";
+    let px = a === "end" || a === "right" ? x - total : a === "center" ? x - total / 2 : x;
+    ctx.textAlign = "start";
+    ctx.textBaseline = "alphabetic";
+    runs.forEach(([text, font, dy], i) => {
+      ctx.font = font;
+      ctx.fillText(text, px, base + (dy || 0));
+      px += widths[i];
+    });
+    ctx.font = runs[0][1];
+    return total;
+  }
+
+  // a game's goal: "max" or "min", or a function of the puzzle when the direction
+  // differs between puzzles; check.js and a game's own texts read it here
+  const goalOf = (def, puzzle) => (typeof def.goal === "function" ? def.goal(puzzle) : def.goal);
+
   globalThis.GamekitCore = {
     rng, pair, frame, resolve, assertUniqueKeys, parseColor, css, gap, thinkLine, seconds,
-    pixelSize, codeSpans, formatScore, ease, fillCentred, wrapText, setLang,
+    pixelSize, codeSpans, formatScore, ease, fillCentred, wrapText, setLang, joinList, subscript, fillRuns, goalOf,
   };
 })();

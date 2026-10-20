@@ -6,7 +6,7 @@ same model live in their browser (WebAssembly, in a Web Worker). Gamekit then
 morphs the student's plan into the optimal one and explains the difference.
 
 - **One div per game**: `::: {.game name="transport"}` in any page or revealjs deck.
-- **Shared reveal**: Lock → Think (real solver numbers) → Morph → Toggle *Yours ⇄ Optimal* → **Why?**
+- **Shared reveal**: Lock → Think (real solver numbers) → Morph → Toggle *Yours ⇄ Optimal* → **Why?** (closes with the × in its corner or a tap on the card)
 - **Class puzzle + New puzzle**: everyone plays the lecture's own data; random puzzles for practice.
 - **Branded automatically**: colors come from `--gk-*` CSS tokens that fall back to the site's Bootstrap or reveal variables.
 - **Every format**: playable in html and revealjs (with a QR code to a phone page); a one-line link in typst, hugo-md and others.
@@ -60,10 +60,11 @@ format-links: false
 
 ```js
 Gamekit.game("knapsack", {
-  title, task, goal: "max" | "min", unit,     // texts; unit is appended to scores ("€", or ["crate", "crates"])
+  title, task, goal: "max" | "min", unit,     // texts; unit is appended to scores ("€", or ["crate", "crates"]);
+                                              // goal may be puzzle => "max" | "min" when the direction differs
   digits,                                     // optional: decimal places of scores (default 0), for optima like 112.5
   board: { w, h, stretch },                   // drawing units; Gamekit scales to pixels
-  compactBoard: { w, h },                     // optional: board for phones (screens < 600 px); h may be em => units
+  compactBoard: { w, h },                     // optional: board for phones (screens < 600 px); h may be (em, puzzle) => units
   class: { … },                               // the class puzzle (the lecture's own data)
   check: { optimum, plans },                  // class optimum from your JuMP model; plans(puzzle): optional
                                               // extra plans check.js also solves from (e.g. larger sizes)
@@ -74,6 +75,7 @@ Gamekit.game("knapsack", {
   drawBoard(ctx, puzzle, view),               // static background
   drawPiece(ctx, piece, view),                // one piece; use piece.paint, alpha is preset
   feasible(puzzle, plan),                     // → true or a short reason
+  note(puzzle, plan, ui),                     // optional: → a warning about the plan or the piece being dragged, or null; shown in the status line on phones
   score(puzzle, plan),
   model(puzzle, plan), decode(puzzle, values, plan), // LP text for HiGHS, and values → plan
   // or: optimal(puzzle, plan) and think(puzzle, result) for games solved in JS
@@ -92,9 +94,13 @@ Gamekit.game("knapsack", {
 - **Text in boxes:** `GamekitCore.fillCentred(ctx, text, x, y, align)` centres digits and capitals exactly on `y` (canvas's `middle` baseline sits a little off).
 - **Solver time in a `think` line:** `GamekitCore.seconds(ms)` formats it like the built-in line (`0.02 s`).
 - **Text over several lines:** `GamekitCore.wrapText(ctx, text, w)` breaks it into lines no wider than `w`.
+- **Fonts within a line:** `GamekitCore.fillRuns(ctx, [[text, font, dy?], …], x, y, align)` draws a bold label with its value, or a symbol with a subscript; centring and `align` work as in `fillCentred` (default `"center"`).
+- **Lists and indices in texts:** `GamekitCore.joinList(["a", "b", "c"])` gives `a, b and c` in the page's language (`a, b und c`); `GamekitCore.subscript(12)` gives `₁₂`.
+- **The goal of a puzzle:** `GamekitCore.goalOf(def, puzzle)` gives `"max"` or `"min"`, also when `goal` is a function.
 - **Drag:** `e.type` is `"down"`, `"move"` (while pressed), `"up"` or `"cancel"` (the browser took the touch: drop the drag, don't apply it). After a press, `e.from` is where it started and `e.moved` is true once it travelled more than a few screen pixels, so a game tells a tap from a drag without its own threshold. Wherever a game moves things, let them be dragged: act on a tap at release (a press may become a drag), keep the drag in `ui`, draw the result while it hovers (a see-through piece, red with the reason where it can't go), and apply it on release. The canvas captures the pointer, so a drag that leaves the board still ends.
 - **One text size:** draw all canvas text at `view.em` (the game's HTML text size in board units), so board labels match the task, scores, status and buttons exactly, on slides and phones. Emphasis only through color and weight.
-- **Phones:** on screens narrower than 600 px `view.compact` is true and the board is `compactBoard` if given (its `h` can be a function of the text size `em`, so a layout spaced in em fits every phone without gaps); lay out finger-sized targets (≥ 44 px) there. Scores, status and buttons then form a panel at the bottom of the screen with the buttons in equal columns; on the game's own page (`games/<name>.html`) it is fixed to the bottom edge and the page title is hidden (the site's top bar shows it).
+- **Phones:** on screens narrower than 600 px `view.compact` is true and the board is `compactBoard` if given (its `h` can be a function of the text size `em` and the puzzle, so a layout spaced in em fits every phone and every puzzle without gaps; New lays the board out again); lay out finger-sized targets (≥ 44 px) there. A warning the game draws on the board (e.g. what makes a plan infeasible) belongs in `note` on phones instead: the status line shows it in `bad`, and the panel keeps it in view while the player drags. Scores, status and buttons then form a panel at the bottom of the screen with the buttons in equal columns; on the game's own page (`games/<name>.html`) it is fixed to the bottom edge and the page title is hidden (the site's top bar shows it).
+- **Floating buttons:** while a game's panel lies in the bottom right corner of the screen (on phones it sticks there), `<html>` has the class `gamekit-at-bottom`. A site hides its own floating button with it, e.g. `html.gamekit-at-bottom .cw-fab { visibility: hidden; }` for a chat button.
 - **Slides:** a wide left column with the task above the board, a thin divider, and a narrow right column with the QR code, the game's state and the buttons at the bottom. The game fills the height the slide has left below its heading, on any stage size; put the div directly on the slide, not inside columns or another block. The QR code links to `<gamekit.url>/games/<name>.html` when `gamekit.url` is set (so exported or locally served slides still work for phones), otherwise to the page's own address.
 - LP variable names: letters, digits and `_` only.
 

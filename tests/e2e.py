@@ -8,7 +8,8 @@
     uv run tests/e2e.py                      # needs: uv run --with playwright playwright install chromium
 
 Checks: no console errors; play → Optimize → morph → toggle → Why? on the html
-page; telemetry DOM events; instant reveal on a reduced-motion touch phone;
+page, Escape also after the focus left the game; telemetry DOM events;
+gamekit-at-bottom only while the panel lies in the bottom corner; instant reveal on a reduced-motion touch phone;
 crisp canvas and no slide change when tapping the game on revealjs slides.
 """
 import sys
@@ -75,9 +76,25 @@ def main():
         assert page.get_attribute("button:text-is('Optimal')", "aria-label") == "Show optimal"
         page.click("text=Why?")
         assert "Your bag: Tent, Camera" in page.inner_text(".gamekit-card")
-        assert page.evaluate("window.__ev") == ["game-start", "game-optimize", "game-why"], page.evaluate("window.__ev")
+        assert page.get_attribute(".gamekit-card-close", "aria-label") == "Close"
+        page.click(".gamekit-card-close")
+        assert page.is_hidden(".gamekit-card"), "the × closes the Why card"
+        assert page.evaluate("document.activeElement.textContent") == "Why?", "closing hands the focus back to Why?"
+        page.click("text=Why?")
+        page.keyboard.press("Escape")
+        assert page.is_hidden(".gamekit-card"), "Escape closes the Why card"
+        page.click("text=Why?")
+        assert page.get_attribute(".gamekit-card", "role") == "dialog", "the Why card is a dialog"
+        page.evaluate("document.activeElement.blur()")  # e.g. a click elsewhere on the page
+        page.keyboard.press("Escape")
+        assert page.is_hidden(".gamekit-card"), "Escape closes the Why card after the focus left the game"
+        assert page.evaluate("window.__ev") == ["game-start", "game-optimize", "game-why", "game-why", "game-why"], page.evaluate("window.__ev")
         page.click("button:text-is('New')")
         assert page.inner_text(".gk-you .gk-value") == "0 points"
+        # the panel in the middle of the screen: no floating button to make way for
+        page.eval_on_selector(".gamekit-side", "s => s.scrollIntoView({ block: 'center' })")
+        page.wait_for_timeout(100)
+        assert not page.evaluate("document.documentElement.classList.contains('gamekit-at-bottom')"), "gamekit-at-bottom with the panel mid-screen"
 
         # 2. phone page, touch, reduced motion: reveal is instant
         phone = browser.new_page(viewport={"width": 390, "height": 844}, device_scale_factor=3,
@@ -85,6 +102,7 @@ def main():
         phone.on("pageerror", lambda e: errors.append(f"phone: {e}"))
         phone.goto(BASE + "/games/knapsack.html")
         assert phone.query_selector(".gamekit.gamekit-compact.gamekit-solo"), "phone page is not in compact solo mode"
+        assert phone.evaluate("document.documentElement.classList.contains('gamekit-at-bottom')"), "panel at the bottom edge, but no gamekit-at-bottom"
         for k in PACK:
             phone.tap(CANVAS, position=item_point(k, rect_of(phone, CANVAS), compact=True))
         assert phone.inner_text(".gk-you .gk-value") == "125 points"
@@ -155,6 +173,16 @@ def main():
         slides.wait_for_selector(".present >> button:text-is('Yours')", timeout=8000)
         after = slides.eval_on_selector(".present .gamekit-side", "e => e.getBoundingClientRect().left")
         assert abs(after - side) <= 1, f"side panel moved from {side} to {after} after Optimize"
+        # Escape closes the Why card and does not open reveal's overview
+        slides.click(".present >> text=Why?")
+        slides.keyboard.press("Escape")
+        assert slides.is_hidden(".present .gamekit-card"), "Escape does not close the Why card on a slide"
+        assert not slides.evaluate("Reveal.isOverview()"), "Escape on the Why card opened reveal's overview"
+        slides.click(".present >> text=Why?")
+        slides.evaluate("document.activeElement.blur()")
+        slides.keyboard.press("Escape")
+        assert slides.is_hidden(".present .gamekit-card"), "Escape does not close the Why card once the focus left the game"
+        assert not slides.evaluate("Reveal.isOverview()"), "Escape after the focus left the game opened reveal's overview"
         # a score too long for one line wraps inside the column, right-aligned like the other scores
         slides.eval_on_selector(".present .gk-opt .gk-value", "e => { e.textContent = '1,234,567 points from a much longer unit'; }")
         col = slides.eval_on_selector(".present .gamekit-side", "e => { const r = e.getBoundingClientRect(); return [r.left, r.right]; }")
