@@ -192,3 +192,12 @@ C.setLang("en");
 }
 
 console.log("core.test.mjs: all passed");
+
+// fillOnBg: fills keep 4.5:1 against the background, moving away from it
+{
+  const dark = C.fillOnBg([0x37, 0x5a, 0x7f, 1], [0x22, 0x22, 0x22, 1]);
+  assert.ok(C.contrast(dark, [0x22, 0x22, 0x22]) >= 4.5 && dark[0] > 0x37 && dark[3] === 1, `dark ${dark}`);
+  const light = C.fillOnBg([0x53, 0x7e, 0x8f, 0.5], [0xff, 0xfd, 0xfc, 1]);
+  assert.ok(C.contrast(light, [0xff, 0xfd, 0xfc]) >= 4.5 && light[0] < 0x53 && light[0] > 0x40 && light[3] === 0.5, `light ${light}`);
+  assert.deepEqual(C.fillOnBg([0x9e, 0x2b, 0x2b, 1], [0xff, 0xfd, 0xfc, 1]), [0x9e, 0x2b, 0x2b, 1]);
+}

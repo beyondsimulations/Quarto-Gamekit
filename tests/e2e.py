@@ -77,6 +77,21 @@ TEXT_PIXELS = """() => {
   return { text, own: count(text), old: old && old !== text ? count(old) : 0 }; }"""
 
 
+# contrast of the page colour (the label) against the most common colour in the first item's box (its fill)
+LABEL_ON_FILL = """() => {
+  const c = document.querySelector('.gamekit canvas'), s = c.width / 100, ctx = c.getContext('2d');
+  const d = ctx.getImageData(14 * s, 8 * s, 18 * s, 10 * s).data, n = {};
+  for (let i = 0; i < d.length; i += 4) { const k = d[i] + ',' + d[i + 1] + ',' + d[i + 2]; n[k] = (n[k] || 0) + 1; }
+  const bg = (() => { const p = document.createElement('canvas').getContext('2d'); p.fillStyle = getComputedStyle(document.querySelector('.gamekit')).getPropertyValue('--gk-bg').trim(); p.fillRect(0, 0, 1, 1); return [...p.getImageData(0, 0, 1, 1).data].join(','); })();
+  const fill = Object.entries(n).filter(([k]) => k !== '0,0,0').sort((a, b) => b[1] - a[1])[0][0].split(',').map(Number);
+  // the label pixel: the one closest to the page colour (antialiasing leaves few exact hits)
+  const bgc = bg.split(',').map(Number), dist = (k) => k.split(',').reduce((t, v, i) => t + Math.abs(v - bgc[i]), 0);
+  const label = Object.keys(n).filter((k) => k !== '0,0,0').sort((x, y) => dist(x) - dist(y))[0].split(',').map(Number);
+  const lum = (c) => { const [r, g, b] = c.map((x) => { x /= 255; return x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4; }); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+  const a = lum(fill), b = lum(label);
+  return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05); }"""
+
+
 def main():
     errors = []
     with sync_playwright() as p:
@@ -226,7 +241,7 @@ def main():
 
         # 4. dark mode: tokens readable on the page ground in both modes; a toggle repaints a running game
         for scheme in ("light", "dark"):
-            pg = browser.new_page(color_scheme=scheme)
+            pg = browser.new_page(color_scheme=scheme, device_scale_factor=2)
             pg.on("pageerror", lambda e: errors.append(f"theme: {e}"))
             pg.goto(BASE + "/index.html")
             assert pg.evaluate("document.body.classList.contains('quarto-%s')" % scheme), f"no quarto-{scheme} on body"
@@ -235,6 +250,12 @@ def main():
             for tok in ("muted", "good", "bad", "text"):
                 assert cr[tok] >= 4.5, f"{scheme}: --gk-{tok} has contrast {cr[tok]:.2f}:1 on the page"
             print(f"  {scheme}: " + ", ".join(f"{t} {cr[t]:.2f}" for t in ("muted", "good", "bad", "text")))
+            if scheme == "dark":  # a packed item's label (page colour) on its fill
+                pg.click(CANVAS, position=item_point(0, rect_of(pg, CANVAS)))
+                pg.wait_for_timeout(500)
+                ratio = pg.evaluate(LABEL_ON_FILL)
+                assert ratio is not None and ratio >= 4.5, f"packed item's label on its fill: {ratio}"
+                print(f"  dark: label on fill {ratio:.2f}")
             pg.close()
         pg = browser.new_page(color_scheme="light", viewport={"width": 1100, "height": 900})
         pg.on("pageerror", lambda e: errors.append(f"toggle: {e}"))

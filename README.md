@@ -126,6 +126,8 @@ mixed from the text and background tokens, `--gk-good` and `--gk-bad` switch to
 variants that are readable on a dark page (under `body.quarto-dark`), and a running
 game repaints when the reader flips the color-scheme toggle.
 
+The fill tokens (`accent`, `neutral`, `good`, `bad`) are kept at 4.5:1 against the background (moved toward black or white if needed), so text drawn in the page color on a fill stays readable in every theme and mode.
+
 ## Telemetry
 
 | `gamekit.telemetry` | Behaviour |
