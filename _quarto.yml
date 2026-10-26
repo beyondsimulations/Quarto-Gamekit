@@ -15,4 +15,8 @@ filters:
   - gamekit
 
 format:
-  html: default
+  html:
+    theme:
+      light: default
+      dark: darkly
+    respect-user-color-scheme: true

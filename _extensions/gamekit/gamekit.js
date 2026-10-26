@@ -576,6 +576,11 @@
   // ---------- startup ----------
   function start() {
     document.querySelectorAll(".gamekit[data-game]").forEach(mount);
+    // Quarto's light/dark toggle swaps the class on body: re-read the tokens and repaint
+    new MutationObserver(() => {
+      views.forEach((g) => { g.colors = readColors(g.root); g.css = cssOf(g.colors); });
+      redrawAll();
+    }).observe(document.body, { attributes: true, attributeFilter: ["class"] });
     markBottomSoon();
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start);

@@ -62,6 +62,7 @@ assert.deepEqual(C.parseColor("rgb(1, 2, 3)"), [1, 2, 3, 1]);
 assert.equal(C.css([1, 2, 3]), "rgb(1 2 3)");
 assert.equal(C.css([1, 2, 3, 0.75]), "rgb(1 2 3 / 0.75)");
 assert.equal(C.resolve({ key: "m", color: "muted" }, { muted: [33, 37, 41, 0.75] }).paint, "rgb(33 37 41 / 0.75)");
+assert.deepEqual(C.parseColor("color(srgb 0.347059 0.358824 0.370588)"), [89, 92, 94, 1]);
 assert.equal(C.parseColor("nonsense"), null);
 
 // gap: percent distance from the optimum, both directions

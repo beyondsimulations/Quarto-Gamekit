@@ -12,6 +12,7 @@ page, Escape also after the focus left the game; telemetry DOM events;
 gamekit-at-bottom only while the panel lies in the bottom corner; instant reveal on a reduced-motion touch phone;
 crisp canvas and no slide change when tapping the game on revealjs slides.
 """
+import os
 import sys
 
 from playwright.sync_api import sync_playwright
@@ -50,10 +51,36 @@ def rect_of(page, sel):
     return page.eval_on_selector(sel, "c => { const r = c.getBoundingClientRect(); return {width: r.width, height: r.height}; }")
 
 
+# the --gk-* tokens as the canvas sees them, against the page's own background
+TOKEN_CONTRAST = """() => {
+  const cs = getComputedStyle(document.querySelector('.gamekit'));
+  const ctx = document.createElement('canvas').getContext('2d');
+  const rgb = (v) => { ctx.fillStyle = '#000'; ctx.fillStyle = v; ctx.fillRect(0, 0, 1, 1); return [...ctx.getImageData(0, 0, 1, 1).data]; };
+  const lum = (c) => { const [r, g, b] = c.slice(0, 3).map((x) => { x /= 255; return x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4; }); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+  const bg = rgb(getComputedStyle(document.body).backgroundColor), out = {};
+  for (const t of ['muted', 'good', 'bad', 'text']) {
+    const a = lum(rgb(cs.getPropertyValue('--gk-' + t).trim())), b = lum(bg);
+    out[t] = (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+  }
+  return out; }"""
+
+# canvas pixels that carry exactly the current --gk-text colour (own), and the colour of the previous call (old)
+TEXT_PIXELS = """() => {
+  const c = document.querySelector('.gamekit canvas'), cs = getComputedStyle(c.closest('.gamekit'));
+  const probe = document.createElement('canvas').getContext('2d');
+  probe.fillStyle = cs.getPropertyValue('--gk-text').trim(); probe.fillRect(0, 0, 1, 1);
+  const text = [...probe.getImageData(0, 0, 1, 1).data].slice(0, 3).join(',');
+  const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+  const count = (key) => { let n = 0; for (let i = 0; i < d.length; i += 4) if (d[i] + ',' + d[i + 1] + ',' + d[i + 2] === key && d[i + 3] === 255) n++; return n; };
+  const old = window.__text;
+  window.__text = text;
+  return { text, own: count(text), old: old && old !== text ? count(old) : 0 }; }"""
+
+
 def main():
     errors = []
     with sync_playwright() as p:
-        browser = p.chromium.launch()
+        browser = p.chromium.launch(executable_path=os.environ.get("CHROMIUM_PATH"))
 
         # 1. html page, desktop, normal motion
         page = browser.new_page(viewport={"width": 1100, "height": 900}, device_scale_factor=2)
@@ -196,6 +223,33 @@ def main():
         you_r, opt_r = (slides.eval_on_selector(f".present .{k} .gk-value", "e => e.getBoundingClientRect().right") for k in ("gk-you", "gk-opt"))
         assert abs(col[0] - side) <= 1, f"side panel moved from {side} to {col[0]} for a long score"
         assert abs(opt_r - you_r) <= 1 and opt_r <= col[1] + 1, f"long score ends at {opt_r}, 'You' at {you_r}, column at {col[1]}"
+
+        # 4. dark mode: tokens readable on the page ground in both modes; a toggle repaints a running game
+        for scheme in ("light", "dark"):
+            pg = browser.new_page(color_scheme=scheme)
+            pg.on("pageerror", lambda e: errors.append(f"theme: {e}"))
+            pg.goto(BASE + "/index.html")
+            assert pg.evaluate("document.body.classList.contains('quarto-%s')" % scheme), f"no quarto-{scheme} on body"
+            pg.wait_for_function("document.querySelector('.gamekit canvas')")
+            cr = pg.evaluate(TOKEN_CONTRAST)
+            for tok in ("muted", "good", "bad", "text"):
+                assert cr[tok] >= 4.5, f"{scheme}: --gk-{tok} has contrast {cr[tok]:.2f}:1 on the page"
+            print(f"  {scheme}: " + ", ".join(f"{t} {cr[t]:.2f}" for t in ("muted", "good", "bad", "text")))
+            pg.close()
+        pg = browser.new_page(color_scheme="light", viewport={"width": 1100, "height": 900})
+        pg.on("pageerror", lambda e: errors.append(f"toggle: {e}"))
+        pg.goto(BASE + "/index.html")
+        pg.click(CANVAS, position=item_point(0, rect_of(pg, CANVAS)))  # a game in progress
+        before = pg.evaluate(TEXT_PIXELS)
+        assert before["own"] > 0, "no canvas pixel in the --gk-text colour before the toggle"
+        pg.evaluate("quartoToggleColorScheme()")
+        pg.wait_for_function("document.body.classList.contains('quarto-dark')")
+        pg.wait_for_timeout(300)
+        after = pg.evaluate(TEXT_PIXELS)
+        assert after["text"] != before["text"], "the text token did not change with the toggle"
+        assert after["own"] > 0 and after["old"] == 0, f"canvas still painted in the old colours after the toggle: {after}"
+        assert pg.inner_text(".gk-you .gk-value") == "10 points", "the toggle disturbed the game state"
+        pg.close()
 
         browser.close()
     assert not errors, errors

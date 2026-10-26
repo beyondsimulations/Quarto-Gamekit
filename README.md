@@ -121,6 +121,11 @@ game file in the course's language. Another language is one more table in
 Override them on `.gamekit` in your stylesheet; set at least `--gk-accent` and
 `--gk-neutral` if pages and slides must match exactly.
 
+Dark mode (0.6.0): with a Quarto `theme: {light: …, dark: …}` pair, `--gk-muted` is
+mixed from the text and background tokens, `--gk-good` and `--gk-bad` switch to
+variants that are readable on a dark page (under `body.quarto-dark`), and a running
+game repaints when the reader flips the color-scheme toggle.
+
 ## Telemetry
 
 | `gamekit.telemetry` | Behaviour |
