@@ -200,4 +200,7 @@ console.log("core.test.mjs: all passed");
   const light = C.fillOnBg([0x53, 0x7e, 0x8f, 0.5], [0xff, 0xfd, 0xfc, 1]);
   assert.ok(C.contrast(light, [0xff, 0xfd, 0xfc]) >= 4.5 && light[0] < 0x53 && light[0] > 0x40 && light[3] === 0.5, `light ${light}`);
   assert.deepEqual(C.fillOnBg([0x9e, 0x2b, 0x2b, 1], [0xff, 0xfd, 0xfc, 1]), [0x9e, 0x2b, 0x2b, 1]);
+  // a mid-tone background (luminance 0.25): white cannot reach 4.5:1, black can
+  const mid = C.fillOnBg([0x99, 0x99, 0x99, 1], [0x88, 0x88, 0x88, 1]);
+  assert.ok(C.contrast(mid, [0x88, 0x88, 0x88]) >= 4.5 && mid[0] < 0x88, `mid ${mid}`);
 }

@@ -8,7 +8,8 @@
     uv run tests/e2e.py                      # needs: uv run --with playwright playwright install chromium
 
 Checks: no console errors; play → Optimize → morph → toggle → Why? on the html
-page, Escape also after the focus left the game; telemetry DOM events;
+page, Escape also after the focus left the game; telemetry DOM events; token
+contrast in light, dark and a brand-like light theme; a toggle repaints the canvas;
 gamekit-at-bottom only while the panel lies in the bottom corner; instant reveal on a reduced-motion touch phone;
 crisp canvas and no slide change when tapping the game on revealjs slides.
 """
@@ -63,6 +64,9 @@ TOKEN_CONTRAST = """() => {
     out[t] = (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
   }
   return out; }"""
+
+# a course brand like Applied-Optimization's: danger and success too light for text
+BRAND_LIGHT = ":root { --bs-danger: #DB6B6B; --bs-success: #A7C7C6; }"
 
 # canvas pixels that carry exactly the current --gk-text colour (own), and the colour of the previous call (old)
 TEXT_PIXELS = """() => {
@@ -239,17 +243,21 @@ def main():
         assert abs(col[0] - side) <= 1, f"side panel moved from {side} to {col[0]} for a long score"
         assert abs(opt_r - you_r) <= 1 and opt_r <= col[1] + 1, f"long score ends at {opt_r}, 'You' at {you_r}, column at {col[1]}"
 
-        # 4. dark mode: tokens readable on the page ground in both modes; a toggle repaints a running game
-        for scheme in ("light", "dark"):
+        # 4. dark mode: tokens readable on the page ground in both modes, also under a
+        # brand whose danger/success fail as text; a toggle repaints a running game
+        for scheme, brand in (("light", None), ("dark", None), ("light", BRAND_LIGHT)):
+            label = scheme + (" brand" if brand else "")
             pg = browser.new_page(color_scheme=scheme, device_scale_factor=2)
             pg.on("pageerror", lambda e: errors.append(f"theme: {e}"))
             pg.goto(BASE + "/index.html")
+            if brand:
+                pg.add_style_tag(content=brand)
             assert pg.evaluate("document.body.classList.contains('quarto-%s')" % scheme), f"no quarto-{scheme} on body"
             pg.wait_for_function("document.querySelector('.gamekit canvas')")
             cr = pg.evaluate(TOKEN_CONTRAST)
             for tok in ("muted", "good", "bad", "text"):
-                assert cr[tok] >= 4.5, f"{scheme}: --gk-{tok} has contrast {cr[tok]:.2f}:1 on the page"
-            print(f"  {scheme}: " + ", ".join(f"{t} {cr[t]:.2f}" for t in ("muted", "good", "bad", "text")))
+                assert cr[tok] >= 4.5, f"{label}: --gk-{tok} has contrast {cr[tok]:.2f}:1 on the page"
+            print(f"  {label}: " + ", ".join(f"{t} {cr[t]:.2f}" for t in ("muted", "good", "bad", "text")))
             if scheme == "dark":  # a packed item's label (page colour) on its fill
                 pg.click(CANVAS, position=item_point(0, rect_of(pg, CANVAS)))
                 pg.wait_for_timeout(500)

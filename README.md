@@ -119,12 +119,19 @@ game file in the course's language. Another language is one more table in
 
 `--gk-accent`, `--gk-neutral`, `--gk-text`, `--gk-muted`, `--gk-bg`, `--gk-good`, `--gk-bad`.
 Override them on `.gamekit` in your stylesheet; set at least `--gk-accent` and
-`--gk-neutral` if pages and slides must match exactly.
+`--gk-neutral` if pages and slides must match exactly. An override on `.gamekit`
+pins the token in light and dark mode alike; scope a fixed colour to one mode
+with `body.quarto-light .gamekit` or `body.quarto-dark .gamekit`.
 
 Dark mode (0.6.0): with a Quarto `theme: {light: …, dark: …}` pair, `--gk-muted` is
 mixed from the text and background tokens, `--gk-good` and `--gk-bad` switch to
 variants that are readable on a dark page (under `body.quarto-dark`), and a running
 game repaints when the reader flips the color-scheme toggle.
+
+Since 0.6.1 `--gk-good` and `--gk-bad` are fixed colours, the same as Quizkit's:
+`#2e7d32` / `#b3261e` on a light page, `#7fcf86` / `#f08a8a` on a dark one. They
+no longer follow the theme's success and danger colours, which a brand may set
+too light for text (a danger of `#DB6B6B` is 3.3:1 on a white page).
 
 The fill tokens (`accent`, `neutral`, `good`, `bad`) are kept at 4.5:1 against the background (moved toward black or white if needed), so text drawn in the page color on a fill stays readable in every theme and mode.
 
@@ -144,6 +151,7 @@ identifiers. Each event is also dispatched on `document` as a `CustomEvent`.
 
 ```bash
 for t in tests/*.test.mjs; do node "$t" || exit 1; done
+python3 tests/version.test.py
 node _extensions/gamekit/check.js games/*.js
 
 # browser test (once: uv run --with playwright playwright install chromium)
